@@ -51,7 +51,7 @@ function Lcc({ mapId, SetMap }) {
     new VectorLayer({
       source: sourceCoords,
       id: 'coords',
-      opacity: 0.5,
+      opacity: 0.3,
     })
   );
 

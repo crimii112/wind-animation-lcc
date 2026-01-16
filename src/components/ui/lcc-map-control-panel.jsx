@@ -19,6 +19,14 @@ const LccMapControlPanel = ({
   setArrowGap,
   layerVisible,
   setLayerVisible,
+  coordsOpacity,
+  setCoordsOpacity,
+  arrowsOpacity,
+  setArrowsOpacity,
+  arrowColor,
+  setArrowColor,
+  windColor,
+  setWindColor,
 }) => {
   const [open, setOpen] = useState(true);
 
@@ -106,41 +114,99 @@ const LccMapControlPanel = ({
           <option value={4}>4</option>
         </select>
       </label>
-      <label>
-        <input
-          type="checkbox"
-          checked={layerVisible.coords}
-          onChange={e =>
-            setLayerVisible(v => ({ ...v, coords: e.target.checked }))
-          }
-        />
-        <span>모델링 농도</span>
-      </label>
+      <div className="control-group">
+        <label>
+          <input
+            type="checkbox"
+            checked={layerVisible.coords}
+            onChange={e =>
+              setLayerVisible(v => ({ ...v, coords: e.target.checked }))
+            }
+          />
+          <span>모델링 농도</span>
+        </label>
 
-      <label>
-        <input
-          type="checkbox"
-          checked={layerVisible.arrows}
-          onChange={e =>
-            setLayerVisible(v => ({ ...v, arrows: e.target.checked }))
-          }
-        />
-        <span>바람 화살표</span>
-      </label>
-
-      <label>
-        <input
-          type="checkbox"
-          checked={layerVisible.windAnimation}
-          onChange={e =>
-            setLayerVisible(v => ({
-              ...v,
-              windAnimation: e.target.checked,
-            }))
-          }
-        />
-        <span>바람 애니메이션</span>
-      </label>
+        {layerVisible.coords && (
+          <div className="sub-controls">
+            <div className="sub-row">
+              <span className="label-text">투명도</span>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.1"
+                value={coordsOpacity}
+                onChange={e => setCoordsOpacity(Number(e.target.value))}
+              />
+              <span className="opacity-percent">
+                {Math.round(coordsOpacity * 100)}%
+              </span>
+            </div>
+          </div>
+        )}
+      </div>
+      <div className="control-group">
+        <label>
+          <input
+            type="checkbox"
+            checked={layerVisible.arrows}
+            onChange={e =>
+              setLayerVisible(v => ({ ...v, arrows: e.target.checked }))
+            }
+          />
+          <span>바람 화살표</span>
+        </label>
+        {layerVisible.arrows && (
+          <div className="sub-controls">
+            <div className="sub-row">
+              <span className="label-text">투명도</span>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.1"
+                value={arrowsOpacity}
+                onChange={e => setArrowsOpacity(Number(e.target.value))}
+              />
+              <span className="opacity-percent">
+                {Math.round(arrowsOpacity * 100)}%
+              </span>
+              {/* <input
+                type="color"
+                value={arrowColor}
+                onChange={e => setArrowColor(e.target.value)}
+              /> */}
+            </div>
+          </div>
+        )}
+      </div>
+      <div className="control-group">
+        <label>
+          <input
+            type="checkbox"
+            checked={layerVisible.windAnimation}
+            onChange={e =>
+              setLayerVisible(v => ({
+                ...v,
+                windAnimation: e.target.checked,
+              }))
+            }
+          />
+          <span>바람 애니메이션</span>
+        </label>
+        {/* {layerVisible.windAnimation && (
+          <div className="sub-controls">
+            <div className="sub-row">
+              <span className="label-text">색상</span>
+              <input
+                type="color"
+                value={windColor}
+                onChange={e => setWindColor(e.target.value)}
+              />
+            </div>
+          </div>
+        )} */}
+      </div>
       <button className="fold-btn" onClick={() => setOpen(false)}>
         접어두기
       </button>
@@ -271,6 +337,58 @@ const Panel = styled.div`
       background-color: rgba(0, 0, 0, 0.05);
       color: #000;
     }
+  }
+
+  .control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px; /* 간격 축소 */
+    padding: 6px 0;
+    border-bottom: 1px solid #f0f0f0; /* 점선보다 깔끔한 실선 */
+  }
+
+  .sub-controls {
+    padding-left: 26px; /* 체크박스 아이콘 시작점과 맞춤 */
+    margin-top: 2px;
+  }
+
+  .sub-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 28px; /* 한 줄 높이 고정 */
+  }
+
+  .label-text {
+    font-size: 12px;
+    color: #888;
+    min-width: 35px;
+    white-space: nowrap;
+  }
+
+  .opacity-percent {
+    font-size: 12px; /* 더 작은 글씨 크기 */
+    color: #aaa;
+    min-width: 28px;
+    text-align: right;
+  }
+
+  input[type='range'] {
+    flex: 1;
+    height: 3px;
+    cursor: pointer;
+    accent-color: #4a90e2;
+  }
+
+  input[type='color'] {
+    width: 20px;
+    height: 18px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    padding: 0;
+    background: none;
+    cursor: pointer;
+    overflow: hidden;
   }
 `;
 

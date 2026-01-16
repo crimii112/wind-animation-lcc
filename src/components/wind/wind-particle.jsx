@@ -1,9 +1,10 @@
 export default class WindParticle {
-  constructor(item) {
+  constructor(item, color) {
     this.lon = item.lon;
     this.lat = item.lat;
     this.wd = item.wd;
     this.ws = item.ws;
+    this.color = color;
     this.angle = ((this.wd + 180) * Math.PI) / 180;
 
     // 풍속 기반 속도, 길이, 두께 설정

@@ -1,4 +1,4 @@
-import { useContext, useEffect, useRef, useState } from 'react';
+import { use, useContext, useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import styled from 'styled-components';
 
@@ -44,6 +44,12 @@ function Lcc({ mapId, SetMap }) {
     windAnimation: true,
   });
 
+  // 모델링 농도, 바람 화살표, 바람 애니메이션 설정
+  const [coordsOpacity, setCoordsOpacity] = useState(0.3);
+  const [arrowsOpacity, setArrowsOpacity] = useState(1.0);
+  const [arrowColor, setArrowColor] = useState('#FFFF00');
+  const [windColor, setWindColor] = useState('#1480FE');
+
   // 모델링 농도 히트맵(polygon)
   const sourceCoordsRef = useRef(new VectorSource({ wrapX: false }));
   const sourceCoords = sourceCoordsRef.current;
@@ -75,26 +81,6 @@ function Lcc({ mapId, SetMap }) {
     })
   );
 
-  // 화살표 스타일 객체
-  const shaft = new RegularShape({
-    points: 2,
-    radius: 5,
-    stroke: new Stroke({
-      width: 2,
-      color: 'yellow',
-    }),
-    rotateWithView: true,
-  });
-  const head = new RegularShape({
-    points: 3,
-    radius: 5,
-    fill: new Fill({
-      color: 'yellow',
-    }),
-    rotateWithView: true,
-  });
-  const styles = [new Style({ image: shaft }), new Style({ image: head })];
-
   // 지도 초기화
   useEffect(() => {
     if (!map.ol_uid) return;
@@ -115,8 +101,8 @@ function Lcc({ mapId, SetMap }) {
   }, [map, map.ol_uid]);
 
   const handleSingleClick = e => {
-    console.log(e.coordinate);
-    console.log(transform(e.coordinate, 'EPSG:3857', 'LCC'));
+    // console.log(e.coordinate);
+    // console.log(transform(e.coordinate, 'EPSG:3857', 'LCC'));
   };
 
   // 데이터 로딩 트리거(초기 + 옵션 변경)
@@ -149,9 +135,25 @@ function Lcc({ mapId, SetMap }) {
     layerArrowsRef.current?.setVisible(layerVisible.arrows);
   }, [layerVisible]);
 
-  // 화살표 스타일 함수
-  // 화살표는 feature마다 방향/크기가 다르므로 layer.setStyle() 방식 사용
   useEffect(() => {
+    if (layerCoordsRef.current)
+      layerCoordsRef.current.setOpacity(coordsOpacity);
+  }, [coordsOpacity]);
+
+  useEffect(() => {
+    if (layerArrowsRef.current)
+      layerArrowsRef.current.setOpacity(arrowsOpacity);
+  }, [arrowsOpacity]);
+
+  useEffect(() => {
+    updateArrowStyle();
+
+    if (layerArrowsRef.current) {
+      layerArrowsRef.current.changed();
+    }
+  }, [arrowColor, arrowGap]);
+
+  const updateArrowStyle = () => {
     if (!layerArrowsRef.current) return;
 
     layerArrowsRef.current.setStyle(f => {
@@ -162,18 +164,40 @@ function Lcc({ mapId, SetMap }) {
       const angle = ((wd - 180) * Math.PI) / 180;
       const scale = ws / 10;
 
-      shaft.setScale([1, scale]);
-      shaft.setRotation(angle);
-
-      head.setDisplacement([
-        0,
-        head.getRadius() / 2 + shaft.getRadius() * scale,
-      ]);
-      head.setRotation(angle);
-
-      return styles;
+      return [
+        new Style({
+          image: new RegularShape({
+            points: 2,
+            radius: 5,
+            stroke: new Stroke({ width: 2, color: arrowColor }),
+            scale: [1, scale],
+            rotation: angle,
+            rotateWithView: true,
+          }),
+        }),
+        new Style({
+          image: new RegularShape({
+            points: 3,
+            radius: 5,
+            fill: new Fill({ color: arrowColor }),
+            displacement: [0, 5 / 2 + 5 * scale],
+            rotation: angle,
+            rotateWithView: true,
+          }),
+        }),
+      ];
     });
-  }, []);
+  };
+
+  useEffect(() => {
+    if (windData && windData.length > 0) {
+      windParticlesRef.current = windData.map(
+        item => new WindParticle(item, windColor)
+      );
+    } else {
+      windParticlesRef.current = [];
+    }
+  }, [windData, windColor]);
 
   const polygonStyleCache = useRef({});
   const getPolygonStyle = value => {
@@ -236,7 +260,7 @@ function Lcc({ mapId, SetMap }) {
     }
   };
 
-  // 히트맵 Polygon Feature 생성
+  /* 히트맵 Polygon Feature 생성 - data 전체 polygon 생성 */
   // const createPolygonFeatures = data =>
   //   data.map(item => {
   //     const f = new Feature({
@@ -256,6 +280,7 @@ function Lcc({ mapId, SetMap }) {
   //     return f;
   //   });
 
+  /* 히트맵 Polygon Feature 생성 - legend 기준 multipolygon 생성 */
   const createPolygonFeatures = data => {
     const colorRange = rgbs[bgPoll];
 
@@ -284,7 +309,7 @@ function Lcc({ mapId, SetMap }) {
       }
     });
 
-    console.log(groupedCoordinates);
+    // console.log(groupedCoordinates);
 
     const features = Object.keys(groupedCoordinates).map(index => {
       const range = colorRange[index];
@@ -402,6 +427,14 @@ function Lcc({ mapId, SetMap }) {
         setArrowGap={setArrowGap}
         layerVisible={layerVisible}
         setLayerVisible={setLayerVisible}
+        coordsOpacity={coordsOpacity}
+        setCoordsOpacity={setCoordsOpacity}
+        arrowsOpacity={arrowsOpacity}
+        setArrowsOpacity={setArrowsOpacity}
+        arrowColor={arrowColor}
+        setArrowColor={setArrowColor}
+        windColor={windColor}
+        setWindColor={setWindColor}
       />
       {bgPoll && (
         <LccLegend title={bgPoll} rgbs={rgbs[bgPoll]} unit={unitMap[bgPoll]} />

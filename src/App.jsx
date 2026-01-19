@@ -2,6 +2,7 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom';
 
 import MapProvider from '@/components/map/MapProvider';
 import Lcc from '@/pages/Lcc';
+import { LccProvider } from '@/components/lcc/LccContext';
 
 function App() {
   return (
@@ -13,7 +14,9 @@ function App() {
             element={
               <div className="flex flex-col w-screen h-screen">
                 <MapProvider id="LccOverlayTest">
-                  <Lcc mapId="LccOverlayTest" />
+                  <LccProvider>
+                    <Lcc mapId="LccOverlayTest" />
+                  </LccProvider>
                 </MapProvider>
               </div>
             }

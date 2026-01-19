@@ -1,4 +1,4 @@
-import { use, useContext, useEffect, useRef, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import styled from 'styled-components';
 
@@ -14,6 +14,7 @@ import { createLccWindOverlay } from '@/components/wind/lcc-wind-overlay';
 import LccMapControlPanel from '@/components/ui/lcc-map-control-panel';
 import LccLegend from '@/components/ui/lcc-legend';
 import WindParticle from '@/components/wind/wind-particle';
+import { LccContext } from '@/components/lcc/LccContext';
 
 const GRID_KM_MAP_CONFIG = {
   9: { center: [131338, -219484], zoom: 7.5 },
@@ -22,40 +23,21 @@ const GRID_KM_MAP_CONFIG = {
 
 function Lcc({ mapId, SetMap }) {
   const map = useContext(MapContext);
+  const { settings, style, layerVisible } = useContext(LccContext);
 
   const [datetimeTxt, setDatetimeTxt] = useState('');
-  // api 요청 파라미터
-  const [gridKm, setGridKm] = useState(9);
-  const [layer, setLayer] = useState(0);
-  const [tstep, setTstep] = useState(0);
-  const [bgPoll, setBgPoll] = useState('O3');
-  const [arrowGap, setArrowGap] = useState(3);
-  const halfCell = (gridKm * 1000) / 2;
+  const halfCell = (settings.gridKm * 1000) / 2;
 
   // 바람 애니메이션 관련
   const windOverlayRef = useRef([]);
   const [windData, setWindData] = useState([]);
   const windParticlesRef = useRef([]);
 
-  // 레이어 on/off 상태 관리
-  const [layerVisible, setLayerVisible] = useState({
-    coords: true,
-    arrows: true,
-    windAnimation: true,
-  });
-
-  // 모델링 농도, 바람 화살표, 바람 애니메이션 설정
-  const [coordsOpacity, setCoordsOpacity] = useState(0.3);
-  const [arrowsOpacity, setArrowsOpacity] = useState(1.0);
-  const [arrowColor, setArrowColor] = useState('#FFFF00');
-  const [windColor, setWindColor] = useState('#1480FE');
-
   // 모델링 농도 히트맵(polygon)
   const sourceCoordsRef = useRef(new VectorSource({ wrapX: false }));
-  const sourceCoords = sourceCoordsRef.current;
   const layerCoordsRef = useRef(
     new VectorLayer({
-      source: sourceCoords,
+      source: sourceCoordsRef.current,
       id: 'coords',
       opacity: 0.3,
     })
@@ -63,10 +45,9 @@ function Lcc({ mapId, SetMap }) {
 
   // 바람 화살표(Point)
   const sourceArrowsRef = useRef(new VectorSource({ wrapX: false }));
-  const sourceArrows = sourceArrowsRef.current;
   const layerArrowsRef = useRef(
     new VectorLayer({
-      source: sourceArrows,
+      source: sourceArrowsRef.current,
       id: 'arrows',
     })
   );
@@ -109,49 +90,46 @@ function Lcc({ mapId, SetMap }) {
   useEffect(() => {
     if (!map?.ol_uid) return;
     getLccData();
-  }, [map?.ol_uid, gridKm, layer, tstep, bgPoll, arrowGap]);
+  }, [
+    map?.ol_uid,
+    settings.gridKm,
+    settings.layer,
+    settings.tstep,
+    settings.bgPoll,
+    settings.arrowGap,
+  ]);
 
   // gridKm 변경 시 지도 뷰 재설정
   useEffect(() => {
     if (!map?.ol_uid) return;
 
-    const cfg = GRID_KM_MAP_CONFIG[gridKm];
-    if (!cfg) return;
-
-    map.getView().animate({
-      center: cfg.center,
-      zoom: cfg.zoom,
-      duration: 500,
-    });
-  }, [gridKm]);
-
-  // bgPoll 변경 시 기존 스타일 캐시 초기화
-  useEffect(() => {
-    polygonStyleCache.current = {};
-  }, [bgPoll]);
+    const cfg = GRID_KM_MAP_CONFIG[settings.gridKm];
+    if (cfg) {
+      map.getView().animate({
+        center: cfg.center,
+        zoom: cfg.zoom,
+        duration: 500,
+      });
+    }
+  }, [settings.gridKm]);
 
   useEffect(() => {
     layerCoordsRef.current?.setVisible(layerVisible.coords);
     layerArrowsRef.current?.setVisible(layerVisible.arrows);
+    layerWindCanvasRef.current?.setVisible(layerVisible.windAnimation);
   }, [layerVisible]);
 
   useEffect(() => {
-    if (layerCoordsRef.current)
-      layerCoordsRef.current.setOpacity(coordsOpacity);
-  }, [coordsOpacity]);
+    layerCoordsRef.current?.setOpacity(style.coordsOpacity);
+  }, [style.coordsOpacity]);
 
   useEffect(() => {
-    if (layerArrowsRef.current)
-      layerArrowsRef.current.setOpacity(arrowsOpacity);
-  }, [arrowsOpacity]);
+    layerArrowsRef.current?.setOpacity(style.arrowsOpacity);
+  }, [style.arrowsOpacity]);
 
   useEffect(() => {
     updateArrowStyle();
-
-    if (layerArrowsRef.current) {
-      layerArrowsRef.current.changed();
-    }
-  }, [arrowColor, arrowGap]);
+  }, [style.arrowColor, settings.arrowGap]);
 
   const updateArrowStyle = () => {
     if (!layerArrowsRef.current) return;
@@ -160,7 +138,6 @@ function Lcc({ mapId, SetMap }) {
       const wd = f.get('wd');
       const ws = f.get('ws');
       if (wd == null || ws == null) return null;
-
       const angle = ((wd - 180) * Math.PI) / 180;
       const scale = ws / 10;
 
@@ -169,7 +146,7 @@ function Lcc({ mapId, SetMap }) {
           image: new RegularShape({
             points: 2,
             radius: 5,
-            stroke: new Stroke({ width: 2, color: arrowColor }),
+            stroke: new Stroke({ width: 2, color: style.arrowColor }),
             scale: [1, scale],
             rotation: angle,
             rotateWithView: true,
@@ -179,7 +156,7 @@ function Lcc({ mapId, SetMap }) {
           image: new RegularShape({
             points: 3,
             radius: 5,
-            fill: new Fill({ color: arrowColor }),
+            fill: new Fill({ color: style.arrowColor }),
             displacement: [0, 5 / 2 + 5 * scale],
             rotation: angle,
             rotateWithView: true,
@@ -189,46 +166,10 @@ function Lcc({ mapId, SetMap }) {
     });
   };
 
-  useEffect(() => {
-    if (windData && windData.length > 0) {
-      windParticlesRef.current = windData.map(
-        item => new WindParticle(item, windColor)
-      );
-    } else {
-      windParticlesRef.current = [];
-    }
-  }, [windData, windColor]);
-
-  const polygonStyleCache = useRef({});
-  const getPolygonStyle = value => {
-    const key = `${bgPoll}-${value}`;
-    if (polygonStyleCache.current[key]) {
-      return polygonStyleCache.current[key];
-    }
-
-    const color = rgbs[bgPoll].find(
-      s => value >= s.min && value < s.max
-    )?.color;
-
-    if (!color) return null;
-
-    const style = new Style({
-      fill: new Fill({
-        color: color.replace(
-          /rgba\(([^,]+), ([^,]+), ([^,]+), ([^)]+)\)/,
-          (_, r, g, b) => `rgba(${r}, ${g}, ${b}, 1)`
-        ),
-      }),
-    });
-
-    polygonStyleCache.current[key] = style;
-    return style;
-  };
-
   // API 데이터 요청
   const getLccData = async () => {
-    sourceArrows.clear();
-    sourceCoords.clear();
+    sourceArrowsRef.current.clear();
+    sourceCoordsRef.current.clear();
     windParticlesRef.current = [];
     setWindData([]);
     document.body.style.cursor = 'progress';
@@ -236,21 +177,31 @@ function Lcc({ mapId, SetMap }) {
     try {
       const { data } = await axios.post(
         `${import.meta.env.VITE_WIND_API_URL}/api/marker/lcc`,
-        { gridKm, layer, tstep, bgPoll, arrowGap }
+        {
+          gridKm: settings.gridKm,
+          layer: settings.layer,
+          tstep: settings.tstep,
+          bgPoll: settings.bgPoll,
+          arrowGap: settings.arrowGap,
+        }
       );
 
       if (data.datetime) setDatetimeTxt(data.datetime);
 
-      if (!data?.polygonData) return;
-
-      // 히트맵 Polygon 생성
-      sourceCoords.addFeatures(createPolygonFeatures(data.polygonData));
+      // 모델링 농도 Polygon 생성
+      if (data.polygonData) {
+        sourceCoordsRef.current.addFeatures(
+          createPolygonFeatures(data.polygonData)
+        );
+      }
 
       // 바람 애니메이션 데이터 설정
       // 화살표 생성
       if (data.arrowData) {
         setWindData(data.arrowData);
-        sourceArrows.addFeatures(createArrowFeatures(data.arrowData));
+        sourceArrowsRef.current.addFeatures(
+          createArrowFeatures(data.arrowData)
+        );
       }
     } catch (e) {
       console.error('Error fetching data:', e);
@@ -260,7 +211,38 @@ function Lcc({ mapId, SetMap }) {
     }
   };
 
-  /* 히트맵 Polygon Feature 생성 - data 전체 polygon 생성 */
+  /* 히트맵 Polygon Feature 생성 - data 전체 polygon 생성 (미사용) */
+  // bgPoll 변경 시 기존 스타일 캐시 초기화
+  // useEffect(() => {
+  //   polygonStyleCache.current = {};
+  // }, [settings.bgPoll]);
+
+  // const polygonStyleCache = useRef({});
+  // const getPolygonStyle = value => {
+  //   const key = `${bgPoll}-${value}`;
+  //   if (polygonStyleCache.current[key]) {
+  //     return polygonStyleCache.current[key];
+  //   }
+
+  //   const color = rgbs[bgPoll].find(
+  //     s => value >= s.min && value < s.max
+  //   )?.color;
+
+  //   if (!color) return null;
+
+  //   const style = new Style({
+  //     fill: new Fill({
+  //       color: color.replace(
+  //         /rgba\(([^,]+), ([^,]+), ([^,]+), ([^)]+)\)/,
+  //         (_, r, g, b) => `rgba(${r}, ${g}, ${b}, 1)`
+  //       ),
+  //     }),
+  //   });
+
+  //   polygonStyleCache.current[key] = style;
+  //   return style;
+  // };
+
   // const createPolygonFeatures = data =>
   //   data.map(item => {
   //     const f = new Feature({
@@ -282,8 +264,7 @@ function Lcc({ mapId, SetMap }) {
 
   /* 히트맵 Polygon Feature 생성 - legend 기준 multipolygon 생성 */
   const createPolygonFeatures = data => {
-    const colorRange = rgbs[bgPoll];
-
+    const colorRange = rgbs[settings.bgPoll];
     const groupedCoordinates = {};
 
     data.forEach(item => {
@@ -309,21 +290,15 @@ function Lcc({ mapId, SetMap }) {
       }
     });
 
-    // console.log(groupedCoordinates);
-
     const features = Object.keys(groupedCoordinates).map(index => {
-      const range = colorRange[index];
-
-      const multiPolygonGeometry = new MultiPolygon(groupedCoordinates[index]);
-
       const feature = new Feature({
-        geometry: multiPolygonGeometry,
+        geometry: new MultiPolygon(groupedCoordinates[index]),
       });
 
       feature.setStyle(
         new Style({
           fill: new Fill({
-            color: range.color,
+            color: colorRange[index].color,
           }),
         })
       );
@@ -347,16 +322,13 @@ function Lcc({ mapId, SetMap }) {
 
   /* wind overlay(바람 애니메이션) 추가 */
   useEffect(() => {
-    if (windData && windData.length > 0) {
-      windParticlesRef.current = windData.map(item => new WindParticle(item));
-    } else {
-      windParticlesRef.current = [];
-    }
-  }, [windData]);
+    windParticlesRef.current = windData.map(
+      item => new WindParticle(item, style.windColor)
+    );
+  }, [windData, style.windColor]);
 
   useEffect(() => {
-    if (!map?.ol_uid || !layerWindCanvasRef.current) return;
-
+    if (!map?.ol_uid) return;
     let animationFrameId;
 
     // 애니메이션 루프
@@ -372,7 +344,6 @@ function Lcc({ mapId, SetMap }) {
         return;
 
       const ctx = e.context;
-
       ctx.save();
       ctx.globalCompositeOperation = 'source-over';
 
@@ -413,31 +384,13 @@ function Lcc({ mapId, SetMap }) {
 
   return (
     <MapDiv id={mapId}>
-      <LccMapControlPanel
-        datetime={datetimeTxt}
-        gridKm={gridKm}
-        setGridKm={setGridKm}
-        layer={layer}
-        setLayer={setLayer}
-        tstep={tstep}
-        setTstep={setTstep}
-        bgPoll={bgPoll}
-        setBgPoll={setBgPoll}
-        arrowGap={arrowGap}
-        setArrowGap={setArrowGap}
-        layerVisible={layerVisible}
-        setLayerVisible={setLayerVisible}
-        coordsOpacity={coordsOpacity}
-        setCoordsOpacity={setCoordsOpacity}
-        arrowsOpacity={arrowsOpacity}
-        setArrowsOpacity={setArrowsOpacity}
-        arrowColor={arrowColor}
-        setArrowColor={setArrowColor}
-        windColor={windColor}
-        setWindColor={setWindColor}
-      />
-      {bgPoll && (
-        <LccLegend title={bgPoll} rgbs={rgbs[bgPoll]} unit={unitMap[bgPoll]} />
+      <LccMapControlPanel datetime={datetimeTxt} />
+      {settings.bgPoll && (
+        <LccLegend
+          title={settings.bgPoll}
+          rgbs={rgbs[settings.bgPoll]}
+          unit={unitMap[settings.bgPoll]}
+        />
       )}
     </MapDiv>
   );

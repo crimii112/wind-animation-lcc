@@ -19,39 +19,40 @@ const LccLegend = ({
   }
 
   return (
-    <LegendWrapper>
-      <LegendContainer>
-        <div className={pollLegendOn ? '' : 'hidden'}>
+    <LegendContainer>
+      {pollLegendOn && (
+        <LegendSection>
           <LegendTitle>
             {title}({unit})
           </LegendTitle>
-          {rgbs.toReversed().map(item => (
-            <div className="flex flex-row items-end gap-1 h-5" key={item.min}>
-              <div
-                className="w-6 h-full"
-                style={{ backgroundColor: item.color }}
-              />
-              <span className="text-sm leading-none translate-y-[5px]">
-                {title === 'O3' ? item.min.toFixed(3) : item.min}
-              </span>
-            </div>
-          ))}
-        </div>
-        <div className={wsLegendOn ? '' : 'hidden'}>
+          <ColorList>
+            {rgbs.toReversed().map(item => (
+              <ColorRow key={item.min}>
+                <ColorBox style={{ backgroundColor: item.color }} />
+                <ValueText>
+                  {title === 'O3' ? item.min.toFixed(3) : item.min}
+                </ValueText>
+              </ColorRow>
+            ))}
+          </ColorList>
+        </LegendSection>
+      )}
+      {wsLegendOn && (
+        <LegendSection>
           <LegendTitle>WS(m/s)</LegendTitle>
-          {arrowLegendDatas.map(item => (
-            <LegendItem key={item.ws}>
-              <ArrowImg ws={item.ws} />
-              <RangeLabel>{Number(item.ws).toFixed(1)}</RangeLabel>
-            </LegendItem>
-          ))}
-        </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            {arrowLegendDatas.map(item => (
+              <LegendItem key={item.ws}>
+                <ArrowImg ws={item.ws} />
+                <ValueText>{Number(item.ws).toFixed(1)}</ValueText>
+              </LegendItem>
+            ))}
+          </div>
+        </LegendSection>
+      )}
 
-        <button className="fold-btn" onClick={() => setOpen(false)}>
-          접어두기
-        </button>
-      </LegendContainer>
-    </LegendWrapper>
+      <FoldBtn onClick={() => setOpen(false)}>접어두기</FoldBtn>
+    </LegendContainer>
   );
 };
 
@@ -124,23 +125,25 @@ const ArrowImg = ({ ws }) => {
   return <canvas ref={arrowImgRef} />;
 };
 
-const LegendWrapper = styled.div`
+const LegendContainer = styled.div`
   position: absolute;
   bottom: 12px;
   right: 12px;
   z-index: 1000;
-`;
-const LegendContainer = styled.div`
-  background: rgba(255, 255, 255, 0.85);
-  padding: 20px;
+
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(4px);
+  padding: 15px;
   border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 15px;
 
-  pointer-events: auto;
+  font-size: 14px;
+  color: #333;
+  min-width: 100px;
 
   .fold-btn {
     position: absolute;
@@ -163,20 +166,6 @@ const LegendContainer = styled.div`
     }
   }
 `;
-const LegendTitle = styled.div`
-  font-size: 14px;
-  font-weight: 600;
-  margin-bottom: 6px;
-`;
-const LegendItem = styled.div`
-  display: flex;
-  align-items: center;
-  margin-bottom: 4px;
-`;
-const RangeLabel = styled.span`
-  font-size: 14px;
-  font-variant-numeric: tabular-nums;
-`;
 
 const LegendOpenBtn = styled.button`
   position: absolute;
@@ -184,20 +173,77 @@ const LegendOpenBtn = styled.button`
   right: 12px;
   z-index: 1000;
 
-  padding: 6px 10px;
-  font-size: 14px;
+  padding: 8px 10px;
+  font-size: 13px;
   border-radius: 6px;
   border: 1px solid #ccc;
   background: rgba(255, 255, 255, 0.85);
   cursor: pointer;
-
-  writing-mode: horizontal-tb;
-  text-orientation: mixed;
-  white-space: nowrap;
-  min-width: 40px;
-  text-align: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s;
 
   &:hover {
     background: rgba(255, 255, 255, 1);
+    border-color: #bbb;
+  }
+`;
+
+const LegendSection = styled.div`
+  display: flex;
+  flex-direction: column;
+`;
+
+const LegendTitle = styled.div`
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #eee;
+`;
+
+const ColorList = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0px;
+`;
+
+const ColorRow = styled.div`
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  height: 18px;
+`;
+
+const ColorBox = styled.div`
+  width: 24px;
+  height: 100%;
+  border-radius: 0px;
+`;
+
+const LegendItem = styled.div`
+  display: flex;
+  align-items: center;
+`;
+
+const ValueText = styled.span`
+  font-size: 12px;
+  color: #333;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  transform: translateY(4px);
+`;
+
+const FoldBtn = styled.button`
+  align-self: flex-end;
+  background: none;
+  border: none;
+  font-size: 11px;
+  color: #999;
+  cursor: pointer;
+  margin-top: 5px;
+
+  &:hover {
+    color: #333;
+    text-decoration: underline;
   }
 `;

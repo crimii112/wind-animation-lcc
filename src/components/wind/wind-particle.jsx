@@ -1,11 +1,12 @@
 export default class WindParticle {
-  constructor(item, color) {
+  constructor(item, color = '#1480FE') {
     this.lon = item.lon;
     this.lat = item.lat;
     this.wd = item.wd;
     this.ws = item.ws;
-    this.color = color;
     this.angle = ((this.wd + 180) * Math.PI) / 180;
+
+    this.rgb = this.parseHex(color);
 
     // 풍속 기반 속도, 길이, 두께 설정
     this.speedFactor = this.ws < 5 ? 0.5 : this.ws < 10 ? 0.75 : 1.0;
@@ -29,6 +30,26 @@ export default class WindParticle {
     else this.opacity = 1;
   }
 
+  parseHex(hex) {
+    try {
+      const strHex = String(hex).trim().replace('#', '');
+
+      const r = parseInt(strHex.substring(0, 2), 16);
+      const g = parseInt(strHex.substring(2, 4), 16);
+      const b = parseInt(strHex.substring(4, 6), 16);
+
+      if (isNaN(r) || isNaN(g) || isNaN(b)) {
+        console.warn('Invalid color format:', hex);
+        return { r: 20, g: 128, b: 254 };
+      }
+
+      return { r, g, b };
+    } catch (e) {
+      console.error('Color parsing error:', e);
+      return { r: 20, g: 128, b: 254 };
+    }
+  }
+
   draw(ctx, map) {
     const pixel = map.getPixelFromCoordinate([this.lon, this.lat]); // 위경도 -> 픽셀 위치
     if (!pixel) return;
@@ -48,9 +69,10 @@ export default class WindParticle {
     );
     const softOpacity = this.opacity * this.opacity;
 
-    grad.addColorStop(0, `rgba(20, 128, 254, ${softOpacity * 0.9})`);
-    grad.addColorStop(0.5, `rgba(20, 128, 254, ${softOpacity * 0.4})`);
-    grad.addColorStop(1, `rgba(20, 128, 254, 0)`);
+    const { r, g, b } = this.rgb;
+    grad.addColorStop(0, `rgba(${r}, ${g}, ${b}, ${softOpacity * 0.9})`);
+    grad.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, ${softOpacity * 0.4})`);
+    grad.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
 
     ctx.beginPath();
     ctx.strokeStyle = grad;

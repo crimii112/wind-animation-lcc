@@ -15,6 +15,7 @@ import LccMapControlPanel from '@/components/ui/lcc-map-control-panel';
 import LccLegend from '@/components/ui/lcc-legend';
 import WindParticle from '@/components/wind/wind-particle';
 import { LccContext } from '@/components/lcc/LccContext';
+import WebGLPointsLayer from 'ol/layer/WebGLPoints';
 
 const GRID_KM_MAP_CONFIG = {
   9: { center: [131338, -219484], zoom: 7.5 },

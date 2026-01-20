@@ -22,7 +22,7 @@ export default class WindParticle {
   }
 
   update() {
-    this.progress += 0.1 * this.speedFactor; // 이동 속도 조절
+    this.progress += 0.008 * this.speedFactor; // 이동 속도 조절
     if (this.progress > 1) this.reset();
 
     if (this.progress < 0.25) this.opacity = this.progress / 0.25;

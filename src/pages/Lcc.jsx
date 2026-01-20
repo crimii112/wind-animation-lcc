@@ -21,6 +21,9 @@ const GRID_KM_MAP_CONFIG = {
   27: { center: [-121523, -46962], zoom: 5 },
 };
 
+/**
+ * METCRO2D, ACONC 파일 데이터로 가져옴 => layer 하나
+ */
 function Lcc({ mapId, SetMap }) {
   const map = useContext(MapContext);
   const { settings, style, layerVisible } = useContext(LccContext);
@@ -190,8 +193,15 @@ function Lcc({ mapId, SetMap }) {
 
       // 모델링 농도 Polygon 생성
       if (data.polygonData) {
+        const startTime = performance.now();
+
         sourceCoordsRef.current.addFeatures(
           createPolygonFeatures(data.polygonData)
+        );
+
+        const endTime = performance.now();
+        console.log(
+          `Polygon 생성 및 추가 시간: ${(endTime - startTime).toFixed(2)}ms`
         );
       }
 
@@ -199,8 +209,18 @@ function Lcc({ mapId, SetMap }) {
       // 화살표 생성
       if (data.arrowData) {
         setWindData(data.arrowData);
+
+        const arrowStart = performance.now();
+
         sourceArrowsRef.current.addFeatures(
           createArrowFeatures(data.arrowData)
+        );
+
+        const arrowEnd = performance.now();
+        console.log(
+          `바람 화살표 생성 및 추가 시간: ${(arrowEnd - arrowStart).toFixed(
+            2
+          )}ms`
         );
       }
     } catch (e) {
@@ -219,12 +239,12 @@ function Lcc({ mapId, SetMap }) {
 
   // const polygonStyleCache = useRef({});
   // const getPolygonStyle = value => {
-  //   const key = `${bgPoll}-${value}`;
+  //   const key = `${settings.bgPoll}-${value}`;
   //   if (polygonStyleCache.current[key]) {
   //     return polygonStyleCache.current[key];
   //   }
 
-  //   const color = rgbs[bgPoll].find(
+  //   const color = rgbs[settings.bgPoll].find(
   //     s => value >= s.min && value < s.max
   //   )?.color;
 
@@ -343,6 +363,8 @@ function Lcc({ mapId, SetMap }) {
       if (!layerVisible.windAnimation || windParticlesRef.current.length === 0)
         return;
 
+      const renderStart = performance.now();
+
       const ctx = e.context;
       ctx.save();
       ctx.globalCompositeOperation = 'source-over';
@@ -353,6 +375,19 @@ function Lcc({ mapId, SetMap }) {
       });
 
       ctx.restore();
+
+      const renderEnd = performance.now(); // 렌더링 종료
+      const duration = renderEnd - renderStart;
+
+      // 매 프레임 찍으면 콘솔이 너무 복잡하므로 100프레임마다 평균을 내거나
+      // 특정 시간 이상(예: 10ms) 걸릴 때만 로그를 남기는 것이 좋습니다.
+      // if (duration > 10) {
+      //   console.warn(
+      //     `[애니메이션 부하] 프레임 렌더링 시간: ${duration.toFixed(
+      //       2
+      //     )}ms (입자 수: ${windParticlesRef.current.length})`
+      //   );
+      // }
     };
 
     const windCanvasLayer = layerWindCanvasRef.current;

@@ -297,7 +297,7 @@ function Lcc({ mapId, SetMap }) {
           groupedCoordinates[colorIndex] = [];
         }
 
-        const coords = [
+        const coordsLcc = [
           [
             [item.lon - halfCell, item.lat + halfCell],
             [item.lon - halfCell, item.lat - halfCell],
@@ -306,9 +306,16 @@ function Lcc({ mapId, SetMap }) {
             [item.lon - halfCell, item.lat + halfCell],
           ],
         ];
-        groupedCoordinates[colorIndex].push(coords);
+
+        const transformedCoords = coordsLcc[0].map(c =>
+          transform(c, 'LCC', 'EPSG:4326')
+        );
+        // groupedCoordinates[colorIndex].push(coordsLcc);  // lcc 기준
+        groupedCoordinates[colorIndex].push([transformedCoords]);
       }
     });
+
+    console.log(groupedCoordinates);
 
     const features = Object.keys(groupedCoordinates).map(index => {
       const feature = new Feature({
@@ -334,7 +341,10 @@ function Lcc({ mapId, SetMap }) {
     data.map(
       item =>
         new Feature({
-          geometry: new Point([item.lon, item.lat]),
+          geometry: new Point(
+            // [item.lon, item.lat]   // lcc 기준
+            transform([item.lon, item.lat], 'LCC', 'EPSG:4326')
+          ),
           wd: item.wd,
           ws: item.ws,
         })

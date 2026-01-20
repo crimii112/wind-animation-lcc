@@ -1,3 +1,5 @@
+import { transform } from 'ol/proj';
+
 export default class WindParticle {
   constructor(item, color = '#1480FE') {
     this.lon = item.lon;
@@ -51,7 +53,10 @@ export default class WindParticle {
   }
 
   draw(ctx, map) {
-    const pixel = map.getPixelFromCoordinate([this.lon, this.lat]); // 위경도 -> 픽셀 위치
+    // const pixel = map.getPixelFromCoordinate([this.lon, this.lat]);  // lcc 기준
+    const pixel = map.getPixelFromCoordinate(
+      transform([this.lon, this.lat], 'LCC', 'EPSG:4326')
+    ); // 위경도 -> 픽셀 위치
     if (!pixel) return;
 
     ctx.save();

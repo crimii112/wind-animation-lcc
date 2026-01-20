@@ -38,8 +38,10 @@ const MapProvider = ({ id, defaultMode = 'Base', children }) => {
         }),
       ],
       view: new View({
-        projection: 'LCC',
-        center: center,
+        // projection: 'LCC',
+        // center: center,
+        projection: 'EPSG:4326',
+        center: transform(center, 'LCC', 'EPSG:4326'),
         zoom: 7.5,
         maxZoom: 13,
         minZoom: 2,

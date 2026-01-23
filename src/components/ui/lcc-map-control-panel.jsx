@@ -31,7 +31,7 @@ const LccMapControlPanel = ({ datetime }) => {
     toggleLayer,
   } = useContext(LccContext);
   const [open, setOpen] = useState(true);
-  const [isPlaying, setIsPlaying] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [speedMultiplier, setSpeedMultiplier] = useState(1);
   const timerRef = useRef(null);
 

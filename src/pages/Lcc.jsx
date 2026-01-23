@@ -17,7 +17,7 @@ import WindParticle from '@/components/wind/wind-particle';
 import { LccContext } from '@/components/lcc/LccContext';
 import earthWind from '@/data/earth_wind.json';
 import {
-  buildEarthGrid,
+  buildGrid,
   EarthWindOLAnimator,
 } from '@/components/earth/earth-wind-ol-engine';
 
@@ -98,18 +98,18 @@ function Lcc({ mapId, SetMap }) {
 
     map.addLayer(layerCoordsRef.current);
     map.addLayer(layerArrowsRef.current);
+    // map.addLayer(layerEarthWindCanvasRef.current);
     map.addLayer(layerWindCanvasRef.current);
     map.addLayer(layerGridRef.current);
-    // map.addLayer(layerEarthWindCanvasRef.current);
 
     map.on('singleclick', handleSingleClick);
 
     return () => {
       map.removeLayer(layerCoordsRef.current);
       map.removeLayer(layerArrowsRef.current);
+      // map.removeLayer(layerEarthWindCanvasRef.current);
       map.removeLayer(layerWindCanvasRef.current);
       map.removeLayer(layerGridRef.current);
-      // map.removeLayer(layerEarthWindCanvasRef.current);
       map.un('singleclick', handleSingleClick);
     };
   }, [map, map.ol_uid]);
@@ -443,67 +443,67 @@ function Lcc({ mapId, SetMap }) {
   }, [map, layerVisible.windAnimation]);
 
   /* overlay 방식 바람 애니메이션 (미사용) */
-  // useEffect(() => {
-  //   if (!map?.ol_uid) return;
+  useEffect(() => {
+    if (!map?.ol_uid) return;
 
-  //   windOverlayRef.current.forEach(o => map.removeOverlay(o));
-  //   windOverlayRef.current = [];
+    windOverlayRef.current.forEach(o => map.removeOverlay(o));
+    windOverlayRef.current = [];
 
-  //   if (!layerVisible.windAnimation || windData.length === 0) return;
+    if (!layerVisible.windAnimation || windData.length === 0) return;
 
-  //   windData.forEach(item => {
-  //     windOverlayRef.current.push(createLccWindOverlay(map, item));
-  //   });
-  // }, [map, windData, layerVisible.windAnimation]);
+    windData.forEach(item => {
+      windOverlayRef.current.push(createLccWindOverlay(map, item));
+    });
+  }, [map, windData, layerVisible.windAnimation]);
 
-  // useEffect(() => {
-  //   if (!map?.ol_uid) return;
+  useEffect(() => {
+    if (!map?.ol_uid) return;
 
-  //   const layer = layerEarthWindCanvasRef.current;
+    const layer = layerEarthWindCanvasRef.current;
 
-  //   layer.setVisible(layerVisible.windAnimation);
+    layer.setVisible(layerVisible.windAnimation);
 
-  //   // 토글 OFF면 정지/정리
-  //   if (!layerVisible.windAnimation) {
-  //     earthWindAnimatorRef.current?.stop?.();
-  //     earthWindAnimatorRef.current = null;
-  //     map.render();
-  //     return;
-  //   }
+    // 토글 OFF면 정지/정리
+    if (!layerVisible.windAnimation) {
+      earthWindAnimatorRef.current?.stop?.();
+      earthWindAnimatorRef.current = null;
+      map.render();
+      return;
+    }
 
-  //   // earth_wind.json에서 u/v 선택
-  //   const uRec = earthWind.find(r => r.header?.parameterNumber === 2);
-  //   const vRec = earthWind.find(r => r.header?.parameterNumber === 3);
-  //   if (!uRec || !vRec) {
-  //     console.error('earth_wind.json: u/v record not found');
-  //     return;
-  //   }
+    // earth_wind.json에서 u/v 선택
+    const uRec = earthWind.find(r => r.header?.parameterNumber === 2);
+    const vRec = earthWind.find(r => r.header?.parameterNumber === 3);
+    if (!uRec || !vRec) {
+      console.error('earth_wind.json: u/v record not found');
+      return;
+    }
 
-  //   const grid = buildEarthGrid(uRec, vRec);
+    const grid = buildGrid(uRec, vRec);
 
-  //   const animator = new EarthWindOLAnimator({
-  //     map,
-  //     grid,
-  //     maxIntensity: 17,
-  //     velocityScaleFactor: 1 / 60000,
-  //   });
+    const animator = new EarthWindOLAnimator({
+      map,
+      grid,
+      maxIntensity: 17,
+      velocityScaleFactor: 1 / 60000,
+    });
 
-  //   earthWindAnimatorRef.current = animator;
-  //   animator.start();
+    earthWindAnimatorRef.current = animator;
+    animator.start();
 
-  //   const onPostRender = e => {
-  //     const ctx = e.context;
-  //     animator.drawFrame(ctx);
-  //   };
+    const onPostRender = e => {
+      const ctx = e.context;
+      animator.drawFrame(ctx);
+    };
 
-  //   layer.on('postrender', onPostRender);
+    layer.on('postrender', onPostRender);
 
-  //   return () => {
-  //     layer.un('postrender', onPostRender);
-  //     animator.stop();
-  //     earthWindAnimatorRef.current = null;
-  //   };
-  // }, [map?.ol_uid, layerVisible.windAnimation]);
+    return () => {
+      layer.un('postrender', onPostRender);
+      animator.stop();
+      earthWindAnimatorRef.current = null;
+    };
+  }, [map?.ol_uid, layerVisible.windAnimation]);
 
   return (
     <MapDiv id={mapId}>

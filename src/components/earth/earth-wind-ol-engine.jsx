@@ -1,28 +1,23 @@
-// earth-wind-ol-engine.js
-// OpenLayers에서 earth.nullschool.net 스타일의 wind particle을 “거의 동일 룩앤필”로 그리기 위한 엔진
-// 핵심: OL의 postrender 캔버스는 프레임마다 클리어될 수 있으므로, 트레일은 "오프스크린 캔버스"에 유지한다.
-
 import { toLonLat } from 'ol/proj';
 
-/** earth 룩앤필 상수 (earth.js / products.js 감각) */
 const INTENSITY_SCALE_STEP = 10;
 const MAX_PARTICLE_AGE = 100;
-const PARTICLE_LINE_WIDTH = 0.65;
-const PARTICLE_MULTIPLIER = 14;
+const PARTICLE_LINE_WIDTH = 1;
+const PARTICLE_MULTIPLIER = 10;
 const FRAME_RATE_MS = 20;
 
-/** earth 느낌의 흰색 그라데이션 */
+/** 그라데이션 */
 function windIntensityColorScale(step, maxWind) {
   const result = [];
-  for (let j = 85; j <= 255; j += step) {
-    result.push(`rgba(${j},${j},${j},1.0)`);
+  for (let j = 235; j <= 255; j += step) {
+    result.push(`rgba(${j},${j},${j},0.7)`);
   }
   result.indexFor = m =>
     Math.floor((Math.min(m, maxWind) / maxWind) * (result.length - 1));
   return result;
 }
 
-/** product.js 핵심: bilinear 보간 */
+/** bilinear 보간 */
 function bilinearInterpolateVector(x, y, g00, g10, g01, g11) {
   const rx = 1 - x;
   const ry = 1 - y;
@@ -35,26 +30,21 @@ function bilinearInterpolateVector(x, y, g00, g10, g01, g11) {
   return [u, v, Math.sqrt(u * u + v * v)];
 }
 
-/**
- * earth_wind.json(earth 스타일 GRIB JSON) → grid.interpolate(lon,lat)
- * - uRec.header.parameterNumber = 2
- * - vRec.header.parameterNumber = 3
- */
-export function buildEarthGrid(uRec, vRec) {
+/** grid 생성 */
+export function buildGrid(uRec, vRec) {
   if (!uRec?.header || !vRec?.header) throw new Error('Invalid u/v record');
 
   const header = uRec.header;
   const uData = uRec.data;
   const vData = vRec.data;
 
-  const λ0 = header.lo1;
-  const φ0 = header.la1;
-  const Δλ = header.dx;
-  const Δφ = header.dy; // 보통 음수(북→남)
-  const ni = header.nx;
-  const nj = header.ny;
+  const λ0 = header.lo1; // 시작 경도
+  const φ0 = header.la1; // 시작 위도
+  const Δλ = header.dx; // 경도 간격
+  const Δφ = header.dy; // 위도 간격(보통 음수)
+  const ni = header.nx; // 격자 크기(가로)
+  const nj = header.ny; // 격자 크기(세로)
 
-  // grid[j][i] = [u,v]
   const grid = new Array(nj);
   let p = 0;
 
@@ -69,15 +59,14 @@ export function buildEarthGrid(uRec, vRec) {
   }
 
   function interpolate(lon, lat) {
-    // earth products.js 흐름: i=(λ-λ0)/Δλ, j=(φ0-φ)/(-Δφ) (Δφ 음수 가정)
     const i = (lon - λ0) / Δλ;
 
     let j;
     if (Δφ < 0) {
-      // la1이 북쪽, dy가 음수(북→남)인 일반 earth 케이스
+      // la1이 북쪽, dy가 음수(북→남)
       j = (φ0 - lat) / -Δφ;
     } else {
-      // 반대 케이스도 방어
+      // 반대 케이스
       j = (lat - φ0) / Δφ;
     }
 
@@ -102,18 +91,13 @@ export function buildEarthGrid(uRec, vRec) {
   return { header, interpolate };
 }
 
-/**
- * earth createField/interpolateField를 OL용으로:
- * - 화면 픽셀 격자(2px step)에 대해 lon/lat을 뽑아 grid.interpolate
- * - field(x,y)로 빠르게 조회
- */
 function buildFieldForViewport({
   map,
   grid,
   velocityScaleFactor,
   step = 2, // 캐시 해상도 (2px)
-  speedScale = 3.0, // 🔥 점→선 체감 핵심
-  flipY = true, // canvas y축 보정
+  speedScale = 15.0,
+  flipY = true,
 }) {
   const size = map.getSize();
   if (!size) return null;
@@ -131,7 +115,7 @@ function buildFieldForViewport({
   };
 
   const velocityScale = bounds.height * velocityScaleFactor * speedScale;
-  const NULL_WIND = [NaN, NaN, null];
+  const NULL_WIND = Object.freeze([NaN, NaN, null]);
 
   const viewProj = map.getView().getProjection();
 
@@ -161,12 +145,12 @@ function buildFieldForViewport({
           let u = w[0] * velocityScale;
           let v = w[1] * velocityScale;
 
-          // canvas의 y축은 아래로 +, 따라서 v는 뒤집어주는 게 일반적으로 맞음
           if (flipY) v = -v;
 
-          // 이 시점의 m은 "그리기용 픽셀속도"를 기준으로 다시 계산
           const m = Math.sqrt(u * u + v * v);
           wind = [u, v, m];
+        } else {
+          wind = NULL_WIND;
         }
       }
 
@@ -174,7 +158,6 @@ function buildFieldForViewport({
     }
   }
 
-  // 2) 캐시 격자 내부에서 bilinear(연속 필드)
   function field(x, y) {
     if (x < 0 || x > bounds.xMax || y < 0 || y > bounds.yMax) return NULL_WIND;
 
@@ -196,20 +179,31 @@ function buildFieldForViewport({
     const g11 = row1[i1];
     if (!g00 || !g10 || !g01 || !g11) return NULL_WIND;
 
-    // “빈 바람(holes)” 섞이면 NULL 처리 (earth도 holes 많음)
-    if (
-      g00[2] === null ||
-      g10[2] === null ||
-      g01[2] === null ||
-      g11[2] === null
-    ) {
-      return NULL_WIND;
+    const vs = [g00, g10, g01, g11].filter(v => v && v[2] !== null);
+
+    if (vs.length < 2) return NULL_WIND;
+
+    // null은 0으로 취급 (Earth식 완화)
+    function nz(v) {
+      return v && v[2] !== null ? v : [0, 0, 0];
     }
 
-    return bilinearInterpolateVector(gx - i0, gy - j0, g00, g10, g01, g11);
+    return bilinearInterpolateVector(
+      gx - i0,
+      gy - j0,
+      nz(g00),
+      nz(g10),
+      nz(g01),
+      nz(g11),
+    );
   }
 
-  field.isDefined = (x, y) => field(x, y)[2] !== null;
+  field.isInsideBoundary = (x, y) => {
+    const v = field(x, y);
+    return v !== NULL_WIND;
+  };
+
+  field.isDefined = (x, y) => field(x, y)[2] !== NULL_WIND;
 
   field.randomize = o => {
     let x, y;
@@ -232,7 +226,7 @@ export class EarthWindOLAnimator {
     map,
     grid,
     maxIntensity = 17,
-    velocityScaleFactor = 1 / 30000,
+    velocityScaleFactor = 1 / 10000,
   }) {
     this.map = map;
     this.grid = grid;
@@ -250,10 +244,9 @@ export class EarthWindOLAnimator {
     this._running = false;
     this._lastTick = 0;
 
-    // earth 기본 fade 느낌
-    this._fadeFillStyle = 'rgba(0, 0, 0, 0.88)';
+    // fade 느낌
+    this._fadeFillStyle = 'rgba(0, 0, 0, 0.97)';
 
-    // ✅ 트레일 유지용 오프스크린
     this._trailCanvas = document.createElement('canvas');
     this._trailCtx = this._trailCanvas.getContext('2d', { alpha: true });
   }
@@ -282,7 +275,7 @@ export class EarthWindOLAnimator {
       velocityScaleFactor: this.velocityScaleFactor,
 
       step: 2, // 1로 하면 더 부드럽지만 무거움
-      speedScale: 3.0, // 점이면 4.0까지 올려도 됨
+      speedScale: 15.0, // 점이면 4.0까지 올려도 됨
       flipY: true, // 방향 이상하면 false/true 반대로 한번만 바꿔 확인
     });
 
@@ -365,7 +358,12 @@ export class EarthWindOLAnimator {
       const m = v[2];
 
       if (m === null) {
-        p.age = MAX_PARTICLE_AGE;
+        if (field.isInsideBoundary(x, y)) {
+          p.x = x + (Number.isFinite(v[0]) ? v[0] : 0);
+          p.y = y + (Number.isFinite(v[1]) ? v[1] : 0);
+        } else {
+          p.age = MAX_PARTICLE_AGE;
+        }
       } else {
         const xt = x + v[0];
         const yt = y + v[1];

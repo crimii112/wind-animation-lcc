@@ -22,6 +22,7 @@ export const LccProvider = ({ children }) => {
     coords: true,
     arrows: true,
     windAnimation: true,
+    grid: false,
   });
 
   const updateSettings = useCallback((key, value) => {

@@ -1,12 +1,26 @@
-import { useContext, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import {
+  ChevronLeft,
+  ChevronRight,
+  Pause,
+  Play,
+  RotateCcw,
+} from 'lucide-react';
 
 import { LccContext } from '@/components/lcc/LccContext';
 
 const MIN_TSTEP = 0;
 const MAX_TSTEP = 238;
+const BASE_SPEED = 1000; // 1초
 
+/**
+ * 지도 컨트롤 패널 컴포넌트
+ * - 날짜/시간 표시
+ * - 재생 컨트롤 바(재생/일시정지, 이전/다음 TSTEP, 속도 선택, 초기화)
+ * - 지도 설정(격자 km, layer, tstep, bgPoll, arrowGap)
+ * - 레이어 visible, 스타일(투명도, 색상) 설정
+ */
 const LccMapControlPanel = ({ datetime }) => {
   const {
     settings,
@@ -17,12 +31,34 @@ const LccMapControlPanel = ({ datetime }) => {
     toggleLayer,
   } = useContext(LccContext);
   const [open, setOpen] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(true);
+  const [speedMultiplier, setSpeedMultiplier] = useState(1);
+  const timerRef = useRef(null);
+
+  /* 자동 재생 로직 */
+  useEffect(() => {
+    if (isPlaying) {
+      const interval = BASE_SPEED / speedMultiplier;
+
+      timerRef.current = setInterval(() => {
+        const nextTstep =
+          settings.tstep >= MAX_TSTEP ? MIN_TSTEP : settings.tstep + 1;
+        updateSettings('tstep', nextTstep);
+      }, interval);
+    } else {
+      clearInterval(timerRef.current);
+    }
+
+    return () => clearInterval(timerRef.current);
+  }, [isPlaying, settings.tstep, speedMultiplier]);
 
   const handlePrevTstep = () => {
+    setIsPlaying(false);
     updateSettings('tstep', Math.max(MIN_TSTEP, settings.tstep - 1));
   };
 
   const handleNextTstep = () => {
+    setIsPlaying(false);
     updateSettings('tstep', Math.min(MAX_TSTEP, settings.tstep + 1));
   };
 
@@ -31,25 +67,67 @@ const LccMapControlPanel = ({ datetime }) => {
 
   return (
     <Panel>
+      {/* 상단 날짜 및 시간 표시 */}
       {datetime && (
         <DatetimeHeader>
-          <button
-            className="icon-btn"
-            onClick={handlePrevTstep}
-            disabled={settings.tstep === MIN_TSTEP}
-          >
-            <ChevronLeft size={15} />
-          </button>
-          {datetime}
-          <button
-            className="icon-btn"
-            onClick={handleNextTstep}
-            disabled={settings.tstep === MAX_TSTEP}
-          >
-            <ChevronRight size={15} />
-          </button>
+          <span className="date-text">{datetime}</span>
         </DatetimeHeader>
       )}
+
+      {/* 재생 컨트롤 바 */}
+      <PlayControlRow>
+        <button
+          className="icon-btn"
+          onClick={handlePrevTstep}
+          disabled={settings.tstep === MIN_TSTEP}
+        >
+          <ChevronLeft size={16} />
+        </button>
+        <button
+          className={`play-main-btn ${isPlaying ? 'playing' : ''}`}
+          onClick={() => setIsPlaying(!isPlaying)}
+        >
+          {isPlaying ? (
+            <>
+              <Pause size={14} fill="currentColor" /> 일시정지
+            </>
+          ) : (
+            <>
+              <Play size={14} fill="currentColor" /> 재생 시작
+            </>
+          )}
+        </button>
+        <button
+          className="icon-btn"
+          onClick={handleNextTstep}
+          disabled={settings.tstep === MAX_TSTEP}
+        >
+          <ChevronRight size={16} />
+        </button>
+        <div className="extra-controls">
+          <SpeedSelect
+            value={speedMultiplier}
+            onChange={e => setSpeedMultiplier(Number(e.target.value))}
+          >
+            <option value={0.5}>0.5x</option>
+            <option value={0.8}>0.8x</option>
+            <option value={1}>1.0x</option>
+            <option value={1.2}>1.2x</option>
+            <option value={1.5}>1.5x</option>
+          </SpeedSelect>
+          <button
+            className="icon-btn"
+            onClick={() => {
+              setIsPlaying(false);
+              updateSettings('tstep', MIN_TSTEP);
+            }}
+          >
+            <RotateCcw size={14} />
+          </button>
+        </div>
+      </PlayControlRow>
+
+      {/* 지도 설정(격자km, layer, tstep, bgPoll, arrowGap) */}
       <ControlRow>
         <span>격자 km</span>
         <select
@@ -111,6 +189,8 @@ const LccMapControlPanel = ({ datetime }) => {
           <option value={4}>4</option>
         </select>
       </ControlRow>
+
+      {/* 레이어 visible, 스타일(투명도, 색상) 설정 */}
       <ControlGroup>
         <label className="main-label">
           <input
@@ -208,6 +288,16 @@ const LccMapControlPanel = ({ datetime }) => {
           </div>
         )}
       </ControlGroup>
+      <ControlGroup>
+        <label className="main-label">
+          <input
+            type="checkbox"
+            checked={layerVisible.grid}
+            onChange={e => toggleLayer('grid', e.target.checked)}
+          />
+          <span>격자</span>
+        </label>
+      </ControlGroup>
       <FoldBtn onClick={() => setOpen(false)}>접어두기</FoldBtn>
     </Panel>
   );
@@ -257,32 +347,15 @@ const PanelOpenBtn = styled.button`
 `;
 
 const DatetimeHeader = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-bottom: 10px;
+  padding-bottom: 8px;
   margin-bottom: 4px;
   border-bottom: 1px solid #eee;
-  font-weight: 600;
-  font-size: 15px;
+  text-align: center;
 
-  .icon-btn {
-    display: flex;
-    align-items: center;
-    padding: 4px;
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    border-radius: 4px;
-    transition: background 0.2s;
-
-    &:hover:not(:disabled) {
-      background: #f0f0f0;
-    }
-    &:disabled {
-      opacity: 0.3;
-      cursor: not-allowed;
-    }
+  .date-text {
+    font-weight: 600;
+    font-size: 16px;
+    color: #333;
   }
 `;
 
@@ -400,5 +473,102 @@ const FoldBtn = styled.button`
   &:hover {
     color: #333;
     text-decoration: underline;
+  }
+`;
+
+const PlayControlRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  background: #f8f9fa;
+  padding: 6px;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+
+  button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .icon-btn {
+    width: 32px;
+    height: 32px;
+    background: white;
+    border-color: #dee2e6;
+    color: #495057;
+    &:hover:not(:disabled) {
+      background: #f1f3f5;
+      border-color: #ced4da;
+      color: #212529;
+    }
+    &:disabled {
+      opacity: 0.3;
+    }
+  }
+
+  .play-main-btn {
+    flex: 1;
+    height: 32px;
+    padding: 0 12px;
+    gap: 8px;
+    background: #3a86ff;
+    color: white;
+    white-space: nowrap;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+
+    &:hover {
+      background: #2575fc;
+      box-shadow: 0 4px 8px rgba(58, 134, 255, 0.3);
+      transform: translateY(-0.5px);
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+
+    &.playing {
+      background: #fff;
+      color: #dc3545;
+      border: 1px solid #ffc9c9;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+      transform: none;
+
+      &:hover {
+        background: #fff5f5;
+        border-color: #ffa8a8;
+        transform: none;
+      }
+    }
+  }
+
+  .extra-controls {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: 2px;
+  }
+`;
+
+const SpeedSelect = styled.select`
+  height: 32px;
+  padding: 0 6px;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  background: white;
+  font-size: 11px;
+  font-weight: 700;
+  color: #495057;
+  cursor: pointer;
+  outline: none;
+  &:hover {
+    border-color: #adb5bd;
   }
 `;

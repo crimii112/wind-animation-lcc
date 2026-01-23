@@ -5,6 +5,11 @@ import { Point } from 'ol/geom';
 import { toContext } from 'ol/render';
 import { Fill, RegularShape, Stroke, Style } from 'ol/style';
 
+/**
+ * 지도 범례 컴포넌트
+ * - 물질 범례
+ * - 풍속 범례
+ */
 const LccLegend = ({
   title,
   rgbs,
@@ -158,7 +163,9 @@ const LegendContainer = styled.div`
     cursor: pointer;
 
     border-radius: 4px;
-    transition: background-color 0.2s, color 0.2s;
+    transition:
+      background-color 0.2s,
+      color 0.2s;
 
     &:hover {
       background-color: rgba(0, 0, 0, 0.05);

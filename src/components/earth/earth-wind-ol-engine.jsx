@@ -91,14 +91,19 @@ export function buildGrid(uRec, vRec) {
   return { header, interpolate };
 }
 
+/**
+ * 화면 픽셀 위치를 주면 그 픽셀에서 점이 얼마나 움직여야 하는지 알려주는 함수
+ * earth의 interpolateField + createField
+ */
 function buildFieldForViewport({
   map,
   grid,
   velocityScaleFactor,
-  step = 2, // 캐시 해상도 (2px)
+  step = 2,
   speedScale = 15.0,
   flipY = true,
 }) {
+  // 현재 화면 크기와 bounds 계산
   const size = map.getSize();
   if (!size) return null;
 
@@ -114,12 +119,14 @@ function buildFieldForViewport({
     height,
   };
 
-  const velocityScale = bounds.height * velocityScaleFactor * speedScale;
+  // 픽셀 이동량 스케일 정의
+  const velocityScale = bounds.height * velocityScaleFactor * speedScale; // 이 값이 너무 작으면 점처럼 보임
   const NULL_WIND = Object.freeze([NaN, NaN, null]);
 
+  // ol 뷰 좌표계
   const viewProj = map.getView().getProjection();
 
-  // 캐시 격자 크기(픽셀 step 기준)
+  // 캐시 격자 크기 산출
   const nx = Math.floor(bounds.width / step) + 1;
   const ny = Math.floor(bounds.height / step) + 1;
 
@@ -127,22 +134,22 @@ function buildFieldForViewport({
   const samples = new Array(ny);
   for (let j = 0; j < ny; j++) samples[j] = new Array(nx);
 
-  // 1) 화면 픽셀 → lon/lat → grid.interpolate → (u,v) 저장
+  // 화면 픽셀 → 위경도 → grid.interpolate → (u,v) 저장
   for (let j = 0; j < ny; j++) {
     const y = j * step;
     for (let i = 0; i < nx; i++) {
       const x = i * step;
 
-      const lonlat = toLonLat(map.getCoordinateFromPixel([x, y]), viewProj);
+      const lonlat = toLonLat(map.getCoordinateFromPixel([x, y]), viewProj); // 픽셀 -> 위경도
       const lon = lonlat[0];
       const lat = lonlat[1];
 
       let wind = NULL_WIND;
 
       if (Number.isFinite(lon) && Number.isFinite(lat)) {
-        const w = grid.interpolate(lon, lat); // [u,v,m] (m는 원래속도)
+        const w = grid.interpolate(lon, lat);
         if (w) {
-          let u = w[0] * velocityScale;
+          let u = w[0] * velocityScale; // 픽셀 양으로 변환
           let v = w[1] * velocityScale;
 
           if (flipY) v = -v;
@@ -158,6 +165,7 @@ function buildFieldForViewport({
     }
   }
 
+  // x, y는 임의의 픽셀 좌표
   function field(x, y) {
     if (x < 0 || x > bounds.xMax || y < 0 || y > bounds.yMax) return NULL_WIND;
 
@@ -203,7 +211,7 @@ function buildFieldForViewport({
     return v !== NULL_WIND;
   };
 
-  field.isDefined = (x, y) => field(x, y)[2] !== NULL_WIND;
+  field.isDefined = (x, y) => field(x, y)[2] !== null;
 
   field.randomize = o => {
     let x, y;
@@ -274,9 +282,9 @@ export class EarthWindOLAnimator {
       grid: this.grid,
       velocityScaleFactor: this.velocityScaleFactor,
 
-      step: 2, // 1로 하면 더 부드럽지만 무거움
-      speedScale: 15.0, // 점이면 4.0까지 올려도 됨
-      flipY: true, // 방향 이상하면 false/true 반대로 한번만 바꿔 확인
+      step: 2,
+      speedScale: 15.0,
+      flipY: true,
     });
 
     if (!this._field) return;
@@ -298,7 +306,6 @@ export class EarthWindOLAnimator {
 
     this.rebuildField();
 
-    // 지도 이동/줌/리사이즈 시 필드 재빌드 (안 맞는 문제 해결 핵심)
     this._onMoveEnd = () => this.rebuildField();
     this._onChangeSize = () => this.rebuildField();
 
@@ -382,7 +389,6 @@ export class EarthWindOLAnimator {
       p.age += 0.6;
     }
 
-    // draw
     g.lineWidth = PARTICLE_LINE_WIDTH;
 
     for (let i = 0; i < this._buckets.length; i++) {
@@ -401,7 +407,6 @@ export class EarthWindOLAnimator {
       g.stroke();
     }
 
-    // ✅ 최종 출력: OL이 준 ctx는 “그 프레임용”이므로, 여기에 트레일 캔버스를 찍는다.
     targetCtx.save();
     targetCtx.globalCompositeOperation = 'source-over';
     targetCtx.drawImage(this._trailCanvas, 0, 0);

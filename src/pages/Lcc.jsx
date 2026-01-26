@@ -488,15 +488,14 @@ function Lcc({ mapId, SetMap }) {
       velocityScaleFactor: 1 / 60000,
     });
 
-    earthWindAnimatorRef.current = animator;
-    animator.start();
-
     const onPostRender = e => {
       const ctx = e.context;
       animator.drawFrame(ctx);
     };
 
     layer.on('postrender', onPostRender);
+    earthWindAnimatorRef.current = animator;
+    animator.start();
 
     return () => {
       layer.un('postrender', onPostRender);

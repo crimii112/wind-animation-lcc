@@ -100,7 +100,7 @@ function buildFieldForViewport({
   grid,
   velocityScaleFactor,
   step = 2,
-  speedScale = 15.0,
+  speedScale = 10.0,
   flipY = true,
 }) {
   // 현재 화면 크기와 bounds 계산
@@ -126,91 +126,55 @@ function buildFieldForViewport({
   // ol 뷰 좌표계
   const viewProj = map.getView().getProjection();
 
-  // 캐시 격자 크기 산출
-  const nx = Math.floor(bounds.width / step) + 1;
-  const ny = Math.floor(bounds.height / step) + 1;
+  /** earth식 columns[x][y] */
+  const columns = [];
 
-  // samples[j][i] = [u,v,m] or NULL_WIND
-  const samples = new Array(ny);
-  for (let j = 0; j < ny; j++) samples[j] = new Array(nx);
+  let x = bounds.x;
 
-  // 화면 픽셀 → 위경도 → grid.interpolate → (u,v) 저장
-  for (let j = 0; j < ny; j++) {
-    const y = j * step;
-    for (let i = 0; i < nx; i++) {
-      const x = i * step;
+  function interpolateColumn(x) {
+    const column = [];
 
-      const lonlat = toLonLat(map.getCoordinateFromPixel([x, y]), viewProj); // 픽셀 -> 위경도
-      const lon = lonlat[0];
-      const lat = lonlat[1];
-
+    for (let y = bounds.y; y <= bounds.yMax; y += step) {
       let wind = NULL_WIND;
 
-      if (Number.isFinite(lon) && Number.isFinite(lat)) {
-        const w = grid.interpolate(lon, lat);
-        if (w) {
-          let u = w[0] * velocityScale; // 픽셀 양으로 변환
-          let v = w[1] * velocityScale;
+      const coord = map.getCoordinateFromPixel([x, y]);
+      if (coord) {
+        const [lon, lat] = toLonLat(coord, viewProj);
 
-          if (flipY) v = -v;
+        if (Number.isFinite(lon) && Number.isFinite(lat)) {
+          const w = grid.interpolate(lon, lat);
+          if (w) {
+            let u = w[0] * velocityScale;
+            let v = w[1] * velocityScale;
 
-          const m = Math.sqrt(u * u + v * v);
-          wind = [u, v, m];
-        } else {
-          wind = NULL_WIND;
+            if (flipY) v = -v;
+
+            const m = Math.sqrt(u * u + v * v);
+            wind = [u, v, m];
+          }
         }
       }
 
-      samples[j][i] = wind;
+      column[y] = wind;
+      column[y + 1] = wind;
     }
+
+    columns[x] = column;
+    columns[x + 1] = column;
   }
 
-  // x, y는 임의의 픽셀 좌표
+  // 전체 화면 계산
+  while (x <= bounds.xMax) {
+    interpolateColumn(x);
+    x += step;
+  }
+
   function field(x, y) {
-    if (x < 0 || x > bounds.xMax || y < 0 || y > bounds.yMax) return NULL_WIND;
-
-    const gx = x / step;
-    const gy = y / step;
-
-    const i0 = Math.floor(gx);
-    const j0 = Math.floor(gy);
-    const i1 = i0 + 1;
-    const j1 = j0 + 1;
-
-    const row0 = samples[j0];
-    const row1 = samples[j1];
-    if (!row0 || !row1) return NULL_WIND;
-
-    const g00 = row0[i0];
-    const g10 = row0[i1];
-    const g01 = row1[i0];
-    const g11 = row1[i1];
-    if (!g00 || !g10 || !g01 || !g11) return NULL_WIND;
-
-    const vs = [g00, g10, g01, g11].filter(v => v && v[2] !== null);
-
-    if (vs.length < 2) return NULL_WIND;
-
-    // null은 0으로 취급 (Earth식 완화)
-    function nz(v) {
-      return v && v[2] !== null ? v : [0, 0, 0];
-    }
-
-    return bilinearInterpolateVector(
-      gx - i0,
-      gy - j0,
-      nz(g00),
-      nz(g10),
-      nz(g01),
-      nz(g11),
-    );
+    const column = columns[Math.round(x)];
+    return (column && column[Math.round(y)]) || NULL_WIND;
   }
 
-  field.isInsideBoundary = (x, y) => {
-    const v = field(x, y);
-    return v !== NULL_WIND;
-  };
-
+  field.isInsideBoundary = (x, y) => field(x, y) !== NULL_WIND;
   field.isDefined = (x, y) => field(x, y)[2] !== null;
 
   field.randomize = o => {
@@ -225,6 +189,10 @@ function buildFieldForViewport({
     return o;
   };
 
+  field.release = () => {
+    columns.length = 0;
+  };
+
   field._bounds = bounds;
   return field;
 }
@@ -233,14 +201,15 @@ export class EarthWindOLAnimator {
   constructor({
     map,
     grid,
-    maxIntensity = 17,
-    velocityScaleFactor = 1 / 10000,
+    maxIntensity = 17, // 색상 버킷 스케일 상한
+    velocityScaleFactor = 1 / 10000, // 바람을 얼마나 빠르게 움직이게 할지 비율
   }) {
     this.map = map;
     this.grid = grid;
     this.maxIntensity = maxIntensity;
     this.velocityScaleFactor = velocityScaleFactor;
 
+    // 바람 세기에 따라 어떤 색을 쓸지 배열 생성
     this._colorStyles = windIntensityColorScale(
       INTENSITY_SCALE_STEP,
       maxIntensity,
@@ -252,13 +221,16 @@ export class EarthWindOLAnimator {
     this._running = false;
     this._lastTick = 0;
 
-    // fade 느낌
+    // 잔상 페이드 강도
+    // alpha가 1에 가까울수록 빨리 지워지고, 낮을수록 오래 남음
     this._fadeFillStyle = 'rgba(0, 0, 0, 0.97)';
 
+    // 매 프레임 화면 ctx에 직접 그리지 않고, trailCanvas에 먼저 그리고 나중에 한 번에 화면에 붙임
     this._trailCanvas = document.createElement('canvas');
     this._trailCtx = this._trailCanvas.getContext('2d', { alpha: true });
   }
 
+  // 지도 크기랑 캔버스 크기 맞추기
   _ensureCanvasSize() {
     const size = this.map.getSize();
     if (!size) return false;
@@ -274,9 +246,11 @@ export class EarthWindOLAnimator {
     return false;
   }
 
+  // 바람 필드랑 점 새로 만들기
   rebuildField() {
     this._ensureCanvasSize();
 
+    // 전체 픽셀 바람 방향 미리 계산
     this._field = buildFieldForViewport({
       map: this.map,
       grid: this.grid,
@@ -289,6 +263,7 @@ export class EarthWindOLAnimator {
 
     if (!this._field) return;
 
+    // 화면 가로 폭에 맞춰 파티클 개수 정하기
     const bounds = this._field._bounds;
     const particleCount = Math.round(bounds.width * PARTICLE_MULTIPLIER);
 
@@ -300,6 +275,7 @@ export class EarthWindOLAnimator {
     }
   }
 
+  // 애니메이션 시작
   start() {
     if (this._running) return;
     this._running = true;
@@ -314,6 +290,8 @@ export class EarthWindOLAnimator {
 
     const loop = t => {
       if (!this._running) return;
+
+      // 너무 자주 그리면 느려지기 때문에 FRAME_RATE_MS마다 한 번만 그리도록 조절
       if (t - this._lastTick >= FRAME_RATE_MS) {
         this._lastTick = t;
         this.map.render();
@@ -323,6 +301,7 @@ export class EarthWindOLAnimator {
     requestAnimationFrame(loop);
   }
 
+  // 애니메이션 정지
   stop() {
     this._running = false;
     if (this._onMoveEnd) this.map.un('moveend', this._onMoveEnd);
@@ -330,9 +309,8 @@ export class EarthWindOLAnimator {
   }
 
   /**
-   * OL layer postrender에서 호출:
-   * - 오프스크린(trailCanvas)에 earth 방식으로 fade/evolve/draw
-   * - 마지막에 현재 프레임 ctx에 drawImage로 덮어씀
+   * 오프스크린(trailCanvas)에 earth 방식으로 fade/evolve/draw
+   * 마지막에 현재 프레임 ctx에 drawImage로 덮어씀
    */
   drawFrame(targetCtx) {
     if (!this._running || !this._field) return;
@@ -350,10 +328,12 @@ export class EarthWindOLAnimator {
     g.fillRect(0, 0, bounds.width, bounds.height);
     g.globalCompositeOperation = 'source-over';
 
-    // evolve (버킷 초기화)
+    // 버킷 초기화
     this._buckets.forEach(b => (b.length = 0));
 
+    // 점들 움직이기
     for (const p of this._particles) {
+      // 수명끝나면 새로 그림
       if (p.age > MAX_PARTICLE_AGE) {
         field.randomize(p);
         p.age = 0;
@@ -361,9 +341,10 @@ export class EarthWindOLAnimator {
 
       const x = p.x;
       const y = p.y;
-      const v = field(x, y);
+      const v = field(x, y); // [dx, dy, m]
       const m = v[2];
 
+      // 바람없을때
       if (m === null) {
         if (field.isInsideBoundary(x, y)) {
           p.x = x + (Number.isFinite(v[0]) ? v[0] : 0);
@@ -372,6 +353,7 @@ export class EarthWindOLAnimator {
           p.age = MAX_PARTICLE_AGE;
         }
       } else {
+        // 바람있을때 -> 다음 위치 계산
         const xt = x + v[0];
         const yt = y + v[1];
 
@@ -386,9 +368,10 @@ export class EarthWindOLAnimator {
         }
       }
 
-      p.age += 0.6;
+      p.age += 0.6; // 점의 나이 늘리기
     }
 
+    // 점 -> 선으로 그리기
     g.lineWidth = PARTICLE_LINE_WIDTH;
 
     for (let i = 0; i < this._buckets.length; i++) {
@@ -398,6 +381,7 @@ export class EarthWindOLAnimator {
       g.beginPath();
       g.strokeStyle = this._colorStyles[i];
 
+      // 점 하나마다 선(현재 위치 -> 다음 위치)을 그리고, 점 위치 업데이트
       for (const p of bucket) {
         g.moveTo(p.x, p.y);
         g.lineTo(p.xt, p.yt);
@@ -407,9 +391,21 @@ export class EarthWindOLAnimator {
       g.stroke();
     }
 
+    // trailCanvas를 실제 화면 targetCtx에 그대로 복사
     targetCtx.save();
     targetCtx.globalCompositeOperation = 'source-over';
     targetCtx.drawImage(this._trailCanvas, 0, 0);
     targetCtx.restore();
+  }
+
+  // trailCanvas 완전히 지움
+  clearTrails() {
+    if (!this._trailCtx) return;
+    this._trailCtx.clearRect(
+      0,
+      0,
+      this._trailCanvas.width,
+      this._trailCanvas.height,
+    );
   }
 }

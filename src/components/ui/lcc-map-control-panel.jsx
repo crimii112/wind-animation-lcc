@@ -198,7 +198,7 @@ const LccMapControlPanel = ({ datetime }) => {
             checked={layerVisible.coords}
             onChange={e => toggleLayer('coords', e.target.checked)}
           />
-          <span>모델링 농도</span>
+          <span>모델링 농도장</span>
         </label>
 
         {layerVisible.coords && (
@@ -229,7 +229,7 @@ const LccMapControlPanel = ({ datetime }) => {
             checked={layerVisible.arrows}
             onChange={e => toggleLayer('arrows', e.target.checked)}
           />
-          <span>바람 화살표</span>
+          <span>바람장 화살표</span>
         </label>
         {layerVisible.arrows && (
           <div className="sub-container">
@@ -270,7 +270,7 @@ const LccMapControlPanel = ({ datetime }) => {
             checked={layerVisible.windAnimation}
             onChange={e => toggleLayer('windAnimation', e.target.checked)}
           />
-          <span>바람 애니메이션</span>
+          <span>바람장 애니메이션</span>
         </label>
         {layerVisible.windAnimation && (
           <div className="sub-container">
@@ -287,6 +287,16 @@ const LccMapControlPanel = ({ datetime }) => {
             </SubRow>
           </div>
         )}
+      </ControlGroup>
+      <ControlGroup>
+        <label className="main-label">
+          <input
+            type="checkbox"
+            checked={layerVisible.sidoshp}
+            onChange={e => toggleLayer('sidoshp', e.target.checked)}
+          />
+          <span>시도 경계</span>
+        </label>
       </ControlGroup>
       <ControlGroup>
         <label className="main-label">

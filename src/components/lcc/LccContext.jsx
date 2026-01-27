@@ -19,6 +19,7 @@ export const LccProvider = ({ children }) => {
   });
 
   const [layerVisible, setLayerVisible] = useState({
+    sidoshp: true,
     coords: true,
     arrows: true,
     windAnimation: true,

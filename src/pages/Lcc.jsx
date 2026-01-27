@@ -8,6 +8,7 @@ import { Fill, RegularShape, Stroke, Style } from 'ol/style';
 import { MultiPoint, MultiPolygon, Point, Polygon } from 'ol/geom';
 import { Feature } from 'ol';
 import { transform } from 'ol/proj';
+import GeoJSON from 'ol/format/GeoJSON';
 
 import MapContext from '@/components/map/MapContext';
 import { createLccWindOverlay } from '@/components/wind/lcc-wind-overlay';
@@ -40,6 +41,16 @@ function Lcc({ mapId, SetMap }) {
   const windOverlayRef = useRef([]);
   const [windData, setWindData] = useState([]);
   const windParticlesRef = useRef([]);
+
+  // 시도 shp
+  const sourceSidoShpRef = useRef(new VectorSource({ wrapX: false }));
+  const layerSidoShpRef = useRef(
+    new VectorLayer({
+      source: sourceSidoShpRef.current,
+      id: 'sidoshp',
+      opacity: 0.5,
+    }),
+  );
 
   // 모델링 농도 히트맵(polygon)
   const sourceCoordsRef = useRef(new VectorSource({ wrapX: false }));
@@ -96,6 +107,7 @@ function Lcc({ mapId, SetMap }) {
     if (!map.ol_uid) return;
     if (SetMap) SetMap(map);
 
+    map.addLayer(layerSidoShpRef.current);
     map.addLayer(layerCoordsRef.current);
     map.addLayer(layerArrowsRef.current);
     // map.addLayer(layerEarthWindCanvasRef.current);
@@ -105,6 +117,7 @@ function Lcc({ mapId, SetMap }) {
     map.on('singleclick', handleSingleClick);
 
     return () => {
+      map.removeLayer(layerSidoShpRef.current);
       map.removeLayer(layerCoordsRef.current);
       map.removeLayer(layerArrowsRef.current);
       // map.removeLayer(layerEarthWindCanvasRef.current);
@@ -118,6 +131,11 @@ function Lcc({ mapId, SetMap }) {
     // console.log(e.coordinate);
     // console.log(transform(e.coordinate, 'EPSG:3857', 'LCC'));
   };
+
+  useEffect(() => {
+    if (!map?.ol_uid) return;
+    getSidoShp();
+  }, [map?.ol_uid]);
 
   // 데이터 로딩 트리거(초기 + 옵션 변경)
   useEffect(() => {
@@ -147,6 +165,7 @@ function Lcc({ mapId, SetMap }) {
   }, [settings.gridKm]);
 
   useEffect(() => {
+    layerSidoShpRef.current?.setVisible(layerVisible.sidoshp);
     layerCoordsRef.current?.setVisible(layerVisible.coords);
     layerArrowsRef.current?.setVisible(layerVisible.arrows);
     layerWindCanvasRef.current?.setVisible(layerVisible.windAnimation);
@@ -200,7 +219,35 @@ function Lcc({ mapId, SetMap }) {
     });
   };
 
-  // API 데이터 요청
+  /* 시도 shp 데이터 요청 */
+  const getSidoShp = async () => {
+    sourceSidoShpRef.current.clear();
+
+    try {
+      const { data } = await axios.post(
+        `${import.meta.env.VITE_WIND_API_URL}/api/marker/sidoshp`,
+      );
+
+      if (!data.sidoshp) return;
+      const features = new GeoJSON().readFeatures(data.sidoshp);
+      sourceSidoShpRef.current.addFeatures(features);
+
+      const style = new Style({
+        stroke: new Stroke({
+          color: 'black',
+          width: 1.5,
+        }),
+      });
+      layerSidoShpRef.current.setStyle(style);
+    } catch (e) {
+      console.error('Error fetching sido shp data:', e);
+      alert(
+        '시도 shp 데이터를 가져오는 데 실패했습니다. 나중에 다시 시도해주세요.',
+      );
+    }
+  };
+
+  /* lcc 데이터 요청 */
   const getLccData = async () => {
     sourceArrowsRef.current.clear();
     sourceCoordsRef.current.clear();
@@ -460,7 +507,6 @@ function Lcc({ mapId, SetMap }) {
     if (!map?.ol_uid) return;
 
     const layer = layerEarthWindCanvasRef.current;
-
     layer.setVisible(layerVisible.windAnimation);
 
     // 토글 OFF면 정지/정리
@@ -480,25 +526,42 @@ function Lcc({ mapId, SetMap }) {
     }
 
     const grid = buildGrid(uRec, vRec);
-
     const animator = new EarthWindOLAnimator({
       map,
       grid,
       maxIntensity: 17,
-      velocityScaleFactor: 1 / 60000,
+      velocityScaleFactor: 1 / 30000,
     });
 
     const onPostRender = e => {
-      const ctx = e.context;
-      animator.drawFrame(ctx);
+      animator.drawFrame(e.context);
+    };
+
+    const onMoveStart = () => {
+      animator.stop();
+      animator.clearTrails();
+      layer.setVisible(false); // ← 잠시 사라지게
+      map.render();
+    };
+
+    const onMoveEnd = () => {
+      layer.setVisible(true);
+      animator.start(); // 내부에서 rebuildField 호출
+      map.render();
     };
 
     layer.on('postrender', onPostRender);
+    map.on('movestart', onMoveStart);
+    map.on('moveend', onMoveEnd);
+
     earthWindAnimatorRef.current = animator;
     animator.start();
 
     return () => {
       layer.un('postrender', onPostRender);
+
+      map.un('movestart', onMoveStart);
+      map.un('moveend', onMoveEnd);
       animator.stop();
       earthWindAnimatorRef.current = null;
     };

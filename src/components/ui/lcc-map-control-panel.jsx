@@ -292,6 +292,16 @@ const LccMapControlPanel = ({ datetime }) => {
         <label className="main-label">
           <input
             type="checkbox"
+            checked={layerVisible.earth}
+            onChange={e => toggleLayer('earth', e.target.checked)}
+          />
+          <span>바람장 earth</span>
+        </label>
+      </ControlGroup>
+      <ControlGroup>
+        <label className="main-label">
+          <input
+            type="checkbox"
             checked={layerVisible.sidoshp}
             onChange={e => toggleLayer('sidoshp', e.target.checked)}
           />

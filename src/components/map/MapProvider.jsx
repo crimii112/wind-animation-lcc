@@ -19,7 +19,7 @@ const MapProvider = ({ id, defaultMode = 'Base', children }) => {
 
   proj4.defs(
     'LCC',
-    '+proj=lcc +lat_1=30 +lat_2=60 +lat_0=38 +lon_0=126 +x_0=0 +y_0=0 +a=6370000 +b=6370000 +units=m +no_defs'
+    '+proj=lcc +lat_1=30 +lat_2=60 +lat_0=38 +lon_0=126 +x_0=0 +y_0=0 +a=6370000 +b=6370000 +units=m +no_defs',
   );
   register(proj4);
 
@@ -38,10 +38,10 @@ const MapProvider = ({ id, defaultMode = 'Base', children }) => {
         }),
       ],
       view: new View({
-        // projection: 'LCC',
-        // center: center,
-        projection: 'EPSG:4326',
-        center: transform(center, 'LCC', 'EPSG:4326'),
+        projection: 'LCC',
+        center: center,
+        // projection: 'EPSG:4326',
+        // center: transform(center, 'LCC', 'EPSG:4326'),
         zoom: 7.5,
         maxZoom: 13,
         minZoom: 2,

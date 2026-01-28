@@ -2,15 +2,14 @@ import { toLonLat } from 'ol/proj';
 
 const INTENSITY_SCALE_STEP = 10;
 const MAX_PARTICLE_AGE = 100;
-const PARTICLE_LINE_WIDTH = 1;
-const PARTICLE_MULTIPLIER = 10;
+const PARTICLE_LINE_WIDTH = 1.5;
 const FRAME_RATE_MS = 20;
 
 /** 그라데이션 */
 function windIntensityColorScale(step, maxWind) {
   const result = [];
   for (let j = 235; j <= 255; j += step) {
-    result.push(`rgba(${j},${j},${j},0.7)`);
+    result.push(`rgba(${j},${j},${j},1)`);
   }
   result.indexFor = m =>
     Math.floor((Math.min(m, maxWind) / maxWind) * (result.length - 1));
@@ -142,8 +141,12 @@ function buildFieldForViewport({
         const [lon, lat] = toLonLat(coord, viewProj);
 
         if (Number.isFinite(lon) && Number.isFinite(lat)) {
-          const w = grid.interpolate(lon, lat);
+          // const w = grid.interpolate(lon, lat);
+          const w = grid.interpolate(coord[0], coord[1]);
           if (w) {
+            if (!w) {
+              console.log('OUT', lon, lat);
+            }
             let u = w[0] * velocityScale;
             let v = w[1] * velocityScale;
 
@@ -202,12 +205,13 @@ export class EarthWindOLAnimator {
     map,
     grid,
     maxIntensity = 17, // 색상 버킷 스케일 상한
-    velocityScaleFactor = 1 / 10000, // 바람을 얼마나 빠르게 움직이게 할지 비율
   }) {
     this.map = map;
     this.grid = grid;
     this.maxIntensity = maxIntensity;
-    this.velocityScaleFactor = velocityScaleFactor;
+    const dx = grid.header.dx;
+    this.velocityScaleFactor = dx === 27000 ? 1 / 60000 : 1 / 30000;
+    this.particleMultiplier = dx === 27000 ? 0.003 : 0.005;
 
     // 바람 세기에 따라 어떤 색을 쓸지 배열 생성
     this._colorStyles = windIntensityColorScale(
@@ -257,7 +261,7 @@ export class EarthWindOLAnimator {
       velocityScaleFactor: this.velocityScaleFactor,
 
       step: 2,
-      speedScale: 15.0,
+      speedScale: 10.0,
       flipY: true,
     });
 
@@ -265,7 +269,10 @@ export class EarthWindOLAnimator {
 
     // 화면 가로 폭에 맞춰 파티클 개수 정하기
     const bounds = this._field._bounds;
-    const particleCount = Math.round(bounds.width * PARTICLE_MULTIPLIER);
+
+    const particleCount = Math.round(
+      bounds.width * bounds.height * this.particleMultiplier,
+    );
 
     this._particles = new Array(particleCount);
     for (let i = 0; i < particleCount; i++) {
@@ -294,7 +301,7 @@ export class EarthWindOLAnimator {
       // 너무 자주 그리면 느려지기 때문에 FRAME_RATE_MS마다 한 번만 그리도록 조절
       if (t - this._lastTick >= FRAME_RATE_MS) {
         this._lastTick = t;
-        this.map.render();
+        // this.map.render();
       }
       requestAnimationFrame(loop);
     };

@@ -23,6 +23,7 @@ export const LccProvider = ({ children }) => {
     coords: true,
     arrows: true,
     windAnimation: true,
+    earth: true,
     grid: false,
   });
 

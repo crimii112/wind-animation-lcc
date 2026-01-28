@@ -53,10 +53,10 @@ export default class WindParticle {
   }
 
   draw(ctx, map) {
-    // const pixel = map.getPixelFromCoordinate([this.lon, this.lat]);  // lcc 기준
-    const pixel = map.getPixelFromCoordinate(
-      transform([this.lon, this.lat], 'LCC', 'EPSG:4326')
-    ); // 위경도 -> 픽셀 위치
+    const pixel = map.getPixelFromCoordinate([this.lon, this.lat]); // lcc 기준
+    // const pixel = map.getPixelFromCoordinate(
+    //   transform([this.lon, this.lat], 'LCC', 'EPSG:4326')
+    // ); // 위경도 -> 픽셀 위치
     if (!pixel) return;
 
     ctx.save();
@@ -70,7 +70,7 @@ export default class WindParticle {
       0,
       movement, // 시작점
       0,
-      movement + this.length // 끝점
+      movement + this.length, // 끝점
     );
     const softOpacity = this.opacity * this.opacity;
 

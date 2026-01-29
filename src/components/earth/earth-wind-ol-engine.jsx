@@ -1,5 +1,3 @@
-import { toLonLat } from 'ol/proj';
-
 const INTENSITY_SCALE_STEP = 2;
 const MAX_PARTICLE_AGE = 100;
 const PARTICLE_LINE_WIDTH = 1.5;
@@ -157,24 +155,18 @@ function buildFieldForViewport({
       let wind = NULL_WIND;
 
       const coord = map.getCoordinateFromPixel([x, y]);
-      if (coord) {
-        const [lon, lat] = toLonLat(coord, viewProj);
+      if (!coord) return;
 
-        if (Number.isFinite(lon) && Number.isFinite(lat)) {
-          // const w = grid.interpolate(lon, lat);
-          const w = grid.interpolate(coord[0], coord[1]);
-          if (w) {
-            if (!w) {
-              console.log('OUT', lon, lat);
-            }
-            let u = w[0] * velocityScale;
-            let v = w[1] * velocityScale;
+      if (Number.isFinite(coord[0]) && Number.isFinite(coord[1])) {
+        const w = grid.interpolate(coord[0], coord[1]);
+        if (w) {
+          let u = w[0] * velocityScale;
+          let v = w[1] * velocityScale;
 
-            if (flipY) v = -v;
+          if (flipY) v = -v;
 
-            const m = Math.sqrt(u * u + v * v);
-            wind = [u, v, m];
-          }
+          const m = Math.sqrt(u * u + v * v);
+          wind = [u, v, m];
         }
       }
 

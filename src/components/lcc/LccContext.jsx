@@ -14,6 +14,7 @@ export const LccProvider = ({ children }) => {
   const [style, setStyle] = useState({
     coordsOpacity: 0.3,
     arrowsOpacity: 1.0,
+    earthScalarOpacity: 0.7,
     arrowColor: '#FFFF00',
     windColor: '#1480FE',
     earthWindColor: '#ffffff',
@@ -24,7 +25,8 @@ export const LccProvider = ({ children }) => {
     coords: true,
     arrows: true,
     windAnimation: true,
-    earth: true,
+    earthWind: true,
+    earthScalar: true,
     grid: false,
   });
 

@@ -21,6 +21,15 @@ import {
   createArrowFeatures,
   createGridFeatures,
 } from '@/components/lcc/lcc.layers';
+import {
+  buildScalarGrid,
+  EarthScalarOLAnimator,
+} from '@/components/earth/earth-scalar-ol-engine';
+import {
+  EARTH_SEGMENTS_MAP,
+  RGBA_RANGES,
+  EARTH_SCALE_META,
+} from '@/components/earth/earth-colors';
 
 /**
  * METCRO2D, ACONC 파일 데이터로 가져옴 => layer 하나
@@ -44,6 +53,7 @@ function Lcc({ mapId, SetMap }) {
   const windOverlayRef = useRef([]);
   const windParticlesRef = useRef([]);
   const earthWindAnimatorRef = useRef(null);
+  const earthScalarAnimatorRef = useRef(null);
 
   const halfCell = (settings.gridKm * 1000) / 2;
 
@@ -56,6 +66,7 @@ function Lcc({ mapId, SetMap }) {
       layerSidoShp,
       layerCoords,
       layerArrows,
+      layerEarthScalarCanvas,
       layerEarthWindCanvas,
       layerWindCanvas,
       layerGrid,
@@ -64,6 +75,7 @@ function Lcc({ mapId, SetMap }) {
     map.addLayer(layerSidoShp);
     map.addLayer(layerCoords);
     map.addLayer(layerArrows);
+    map.addLayer(layerEarthScalarCanvas);
     map.addLayer(layerEarthWindCanvas);
     map.addLayer(layerWindCanvas);
     map.addLayer(layerGrid);
@@ -74,6 +86,7 @@ function Lcc({ mapId, SetMap }) {
       map.removeLayer(layerSidoShp);
       map.removeLayer(layerCoords);
       map.removeLayer(layerArrows);
+      map.removeLayer(layerEarthScalarCanvas);
       map.removeLayer(layerEarthWindCanvas);
       map.removeLayer(layerWindCanvas);
       map.removeLayer(layerGrid);
@@ -106,7 +119,13 @@ function Lcc({ mapId, SetMap }) {
   useEffect(() => {
     if (!map?.ol_uid) return;
     getEarthData();
-  }, [map?.ol_uid, settings.gridKm, settings.layer, settings.tstep]);
+  }, [
+    map?.ol_uid,
+    settings.gridKm,
+    settings.layer,
+    settings.tstep,
+    settings.bgPoll,
+  ]);
 
   // gridKm 변경 시 지도 뷰 재설정
   useEffect(() => {
@@ -128,7 +147,8 @@ function Lcc({ mapId, SetMap }) {
     l.layerCoords.setVisible(layerVisible.coords);
     l.layerArrows.setVisible(layerVisible.arrows);
     l.layerWindCanvas.setVisible(layerVisible.windAnimation);
-    l.layerEarthWindCanvas.setVisible(layerVisible.earth);
+    l.layerEarthWindCanvas.setVisible(layerVisible.earthWind);
+    l.layerEarthScalarCanvas.setVisible(layerVisible.earthScalar);
     l.layerGrid.setVisible(layerVisible.grid);
   }, [layerVisible]);
 
@@ -241,7 +261,12 @@ function Lcc({ mapId, SetMap }) {
       // 모델링 농도 Polygon 생성
       if (data.polygonData) {
         sourceCoords.addFeatures(
-          createPolygonFeatures(data.polygonData, settings, halfCell, rgbs),
+          createPolygonFeatures(
+            data.polygonData,
+            settings,
+            halfCell,
+            RGBA_RANGES,
+          ),
         );
         sourceGrid.addFeatures(createGridFeatures(data.polygonData));
       }
@@ -271,6 +296,7 @@ function Lcc({ mapId, SetMap }) {
           gridKm: settings.gridKm,
           layer: settings.layer,
           tstep: settings.tstep,
+          bgPoll: settings.bgPoll,
         },
       );
 
@@ -340,19 +366,19 @@ function Lcc({ mapId, SetMap }) {
   //   });
   // }, [map, windData, layerVisible.windAnimation]);
 
-  /* earth animation 추가 */
+  /* earth 바람장 추가 */
   useEffect(() => {
     if (!map?.ol_uid) return;
     if (!earthData || earthData.length === 0) return;
 
     const layer = layersRef.current.layerEarthWindCanvas;
-    layer.setVisible(layerVisible.earth);
+    layer.setVisible(layerVisible.earthWind);
 
     // 토글 OFF면 정지/정리
-    if (!layerVisible.earth) {
+    if (!layerVisible.earthWind) {
       earthWindAnimatorRef.current?.stop?.();
       earthWindAnimatorRef.current = null;
-      map.render();
+      // map.render();
       return;
     }
 
@@ -380,13 +406,13 @@ function Lcc({ mapId, SetMap }) {
       animator.stop();
       animator.clearTrails();
       layer.setVisible(false); // ← 잠시 사라지게
-      map.render();
+      // map.render();
     };
 
     const onMoveEnd = () => {
       layer.setVisible(true);
       animator.start(); // 내부에서 rebuildField 호출
-      map.render();
+      // map.render();
     };
 
     layer.on('postrender', onPostRender);
@@ -404,12 +430,71 @@ function Lcc({ mapId, SetMap }) {
       earthWindAnimatorRef.current = null;
       animator.stop();
     };
-  }, [map?.ol_uid, layerVisible.earth, earthData, style.earthWindColor]);
+  }, [map?.ol_uid, layerVisible.earthWind, earthData, style.earthWindColor]);
+
+  /** earth 농도장 */
+  useEffect(() => {
+    if (!map?.ol_uid) return;
+    if (!earthData || earthData.length === 0) return;
+
+    const layer = layersRef.current.layerEarthScalarCanvas;
+    layer.setVisible(layerVisible.earthScalar);
+
+    // 토글 OFF
+    if (!layerVisible.earthScalar) {
+      earthScalarAnimatorRef.current = null;
+      map.render();
+      return;
+    }
+
+    const scalarRec = earthData.find(
+      r => r.header?.parameterCategory === 0 && r.header?.parameterNumber === 0,
+    );
+    if (!scalarRec) {
+      console.error('scalar record not found');
+      return;
+    }
+
+    const grid = buildScalarGrid(scalarRec);
+
+    const earthSegments = EARTH_SEGMENTS_MAP[settings.bgPoll];
+
+    const animator = new EarthScalarOLAnimator({
+      map,
+      grid,
+      segments: earthSegments,
+      alpha: style.earthScalarOpacity,
+    });
+
+    const onPostRender = e => {
+      animator.drawFrame(e.context);
+    };
+
+    layer.on('postrender', onPostRender);
+    earthScalarAnimatorRef.current = animator;
+
+    map.render();
+
+    return () => {
+      layer.un('postrender', onPostRender);
+      earthScalarAnimatorRef.current = null;
+    };
+  }, [
+    map?.ol_uid,
+    earthData,
+    layerVisible.earthScalar,
+    style.earthScalarOpacity,
+  ]);
 
   /* map render 관리 */
   useEffect(() => {
     if (!map?.ol_uid) return;
-    if (!layerVisible.windAnimation && !layerVisible.earth) return;
+    if (
+      !layerVisible.windAnimation &&
+      !layerVisible.earthWind &&
+      !layerVisible.earthScalar
+    )
+      return;
 
     let rafId;
 
@@ -423,15 +508,24 @@ function Lcc({ mapId, SetMap }) {
     return () => {
       if (rafId) cancelAnimationFrame(rafId);
     };
-  }, [map, layerVisible.windAnimation, layerVisible.earth]);
+  }, [
+    map,
+    layerVisible.windAnimation,
+    layerVisible.earthWind,
+    layerVisible.earthScalar,
+  ]);
 
   return (
     <MapDiv id={mapId}>
-      <LccMapControlPanel datetime={datetimeTxt} />
+      <LccMapControlPanel
+        datetime={datetimeTxt}
+        segments={EARTH_SEGMENTS_MAP[settings.bgPoll]}
+        scaleMeta={EARTH_SCALE_META[settings.bgPoll]}
+      />
       {settings.bgPoll && (
         <LccLegend
           title={settings.bgPoll}
-          rgbs={rgbs[settings.bgPoll]}
+          rgbs={RGBA_RANGES[settings.bgPoll]}
           unit={unitMap[settings.bgPoll]}
         />
       )}
@@ -443,318 +537,10 @@ const unitMap = {
   O3: 'ppm',
   PM10: 'µg/m³',
   'PM2.5': 'µg/m³',
+  TEMP: '℃',
 };
 
 export default Lcc;
-
-const rgbs = {
-  O3: [
-    {
-      min: 0.0,
-      max: 0.01,
-      color: 'rgba(135, 192, 232, 1)',
-    },
-    {
-      min: 0.01,
-      max: 0.02,
-      color: 'rgba(76, 162, 244, 1)',
-    },
-    {
-      min: 0.02,
-      max: 0.03,
-      color: 'rgba(53, 150, 249, 1)',
-    },
-    {
-      min: 0.03,
-      max: 0.04,
-      color: 'rgba(99, 254, 99, 1)',
-    },
-    {
-      min: 0.04,
-      max: 0.05,
-      color: 'rgba(0, 234, 0, 1)',
-    },
-    {
-      min: 0.05,
-      max: 0.06,
-      color: 'rgba(0, 216, 0, 1)',
-    },
-    {
-      min: 0.06,
-      max: 0.07,
-      color: 'rgba(0, 177, 0, 1)',
-    },
-    {
-      min: 0.07,
-      max: 0.08,
-      color: 'rgba(0, 138, 0, 1)',
-    },
-    {
-      min: 0.08,
-      max: 0.09,
-      color: 'rgba(0, 117, 0, 1)',
-    },
-    {
-      min: 0.09,
-      max: 0.1,
-      color: 'rgba(224, 224, 0, 1)',
-    },
-    {
-      min: 0.1,
-      max: 0.11,
-      color: 'rgba(193, 193, 0, 1)',
-    },
-    {
-      min: 0.11,
-      max: 0.12,
-      color: 'rgba(177, 177, 0, 1)',
-    },
-    {
-      min: 0.12,
-      max: 0.13,
-      color: 'rgba(146, 146, 0, 1)',
-    },
-    {
-      min: 0.13,
-      max: 0.14,
-      color: 'rgba(115, 115, 0, 1)',
-    },
-    {
-      min: 0.14,
-      max: 0.15,
-      color: 'rgba(100, 100, 0, 1)',
-    },
-    {
-      min: 0.15,
-      max: 0.16,
-      color: 'rgba(255, 150, 150, 1)',
-    },
-    {
-      min: 0.16,
-      max: 0.17,
-      color: 'rgba(255, 120, 120, 1)',
-    },
-    {
-      min: 0.17,
-      max: 0.18,
-      color: 'rgba(255, 90, 90, 1)',
-    },
-    {
-      min: 0.18,
-      max: 0.19,
-      color: 'rgba(255, 60, 60, 1)',
-    },
-    {
-      min: 0.19,
-      max: Infinity,
-      color: 'rgba(255, 0, 0, 1)',
-    },
-  ],
-  PM10: [
-    {
-      min: 0,
-      max: 6,
-      color: 'rgba(135, 192, 232, 1)',
-    },
-    {
-      min: 6,
-      max: 18,
-      color: 'rgba(76, 162, 244, 1)',
-    },
-    {
-      min: 18,
-      max: 31,
-      color: 'rgba(53, 150, 249, 1)',
-    },
-    {
-      min: 31,
-      max: 40,
-      color: 'rgba(99, 254, 99, 1)',
-    },
-    {
-      min: 40,
-      max: 48,
-      color: 'rgba(0, 234, 0, 1)',
-    },
-    {
-      min: 48,
-      max: 56,
-      color: 'rgba(0, 216, 0, 1)',
-    },
-    {
-      min: 56,
-      max: 64,
-      color: 'rgba(0, 177, 0, 1)',
-    },
-    {
-      min: 64,
-      max: 72,
-      color: 'rgba(0, 138, 0, 1)',
-    },
-    {
-      min: 72,
-      max: 81,
-      color: 'rgba(0, 117, 0, 1)',
-    },
-    {
-      min: 81,
-      max: 93,
-      color: 'rgba(224, 224, 0, 1)',
-    },
-    {
-      min: 93,
-      max: 105,
-      color: 'rgba(193, 193, 0, 1)',
-    },
-    {
-      min: 105,
-      max: 117,
-      color: 'rgba(177, 177, 0, 1)',
-    },
-    {
-      min: 117,
-      max: 130,
-      color: 'rgba(146, 146, 0, 1)',
-    },
-    {
-      min: 130,
-      max: 142,
-      color: 'rgba(115, 115, 0, 1)',
-    },
-    {
-      min: 142,
-      max: 151,
-      color: 'rgba(100, 100, 0, 1)',
-    },
-    {
-      min: 151,
-      max: 191,
-      color: 'rgba(255, 150, 150, 1)',
-    },
-    {
-      min: 191,
-      max: 231,
-      color: 'rgba(255, 120, 120, 1)',
-    },
-    {
-      min: 231,
-      max: 271,
-      color: 'rgba(255, 90, 90, 1)',
-    },
-    {
-      min: 271,
-      max: 320,
-      color: 'rgba(255, 60, 60, 1)',
-    },
-    {
-      min: 320,
-      max: Infinity,
-      color: 'rgba(255, 0, 0, 1)',
-    },
-  ],
-  'PM2.5': [
-    {
-      min: 0,
-      max: 5,
-      color: 'rgba(135, 192, 232, 1)',
-    },
-    {
-      min: 5,
-      max: 10,
-      color: 'rgba(76, 162, 244, 1)',
-    },
-    {
-      min: 10,
-      max: 16,
-      color: 'rgba(53, 150, 249, 1)',
-    },
-    {
-      min: 16,
-      max: 19,
-      color: 'rgba(99, 254, 99, 1)',
-    },
-    {
-      min: 19,
-      max: 22,
-      color: 'rgba(0, 234, 0, 1)',
-    },
-    {
-      min: 22,
-      max: 26,
-      color: 'rgba(0, 216, 0, 1)',
-    },
-    {
-      min: 26,
-      max: 30,
-      color: 'rgba(0, 177, 0, 1)',
-    },
-    {
-      min: 30,
-      max: 33,
-      color: 'rgba(0, 138, 0, 1)',
-    },
-    {
-      min: 33,
-      max: 36,
-      color: 'rgba(0, 117, 0, 1)',
-    },
-    {
-      min: 36,
-      max: 42,
-      color: 'rgba(224, 224, 0, 1)',
-    },
-    {
-      min: 42,
-      max: 48,
-      color: 'rgba(193, 193, 0, 1)',
-    },
-    {
-      min: 48,
-      max: 55,
-      color: 'rgba(177, 177, 0, 1)',
-    },
-    {
-      min: 55,
-      max: 62,
-      color: 'rgba(146, 146, 0, 1)',
-    },
-    {
-      min: 62,
-      max: 69,
-      color: 'rgba(115, 115, 0, 1)',
-    },
-    {
-      min: 69,
-      max: 76,
-      color: 'rgba(100, 100, 0, 1)',
-    },
-    {
-      min: 76,
-      max: 107,
-      color: 'rgba(255, 150, 150, 1)',
-    },
-    {
-      min: 107,
-      max: 138,
-      color: 'rgba(255, 120, 120, 1)',
-    },
-    {
-      min: 138,
-      max: 169,
-      color: 'rgba(255, 90, 90, 1)',
-    },
-    {
-      min: 169,
-      max: 200,
-      color: 'rgba(255, 60, 60, 1)',
-    },
-    {
-      min: 200,
-      max: Infinity,
-      color: 'rgba(255, 0, 0, 1)',
-    },
-  ],
-};
 
 const MapDiv = styled.div`
   width: 100%;

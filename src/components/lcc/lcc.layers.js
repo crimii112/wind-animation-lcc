@@ -46,6 +46,15 @@ export function createLccLayers() {
     updateWhileInteracting: true,
   });
 
+  // 농도장 earth
+  const layerEarthScalarCanvas = new VectorLayer({
+    id: 'earthScalarCanvas',
+    source: new VectorSource(),
+    style: null,
+    updateWhileAnimating: true,
+    updateWhileInteracting: true,
+  });
+
   // 격자
   const sourceGrid = new VectorSource({ wrapX: false });
   const layerGrid = new VectorLayer({
@@ -62,6 +71,7 @@ export function createLccLayers() {
     layerArrows,
     layerWindCanvas,
     layerEarthWindCanvas,
+    layerEarthScalarCanvas,
     sourceGrid,
     layerGrid,
   };

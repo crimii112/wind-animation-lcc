@@ -1,18 +1,38 @@
 import { toLonLat } from 'ol/proj';
 
-const INTENSITY_SCALE_STEP = 10;
+const INTENSITY_SCALE_STEP = 2;
 const MAX_PARTICLE_AGE = 100;
 const PARTICLE_LINE_WIDTH = 1.5;
 const FRAME_RATE_MS = 20;
 
 /** 그라데이션 */
-function windIntensityColorScale(step, maxWind) {
+function windIntensityColorScale(step, maxWind, baseColor) {
   const result = [];
-  for (let j = 235; j <= 255; j += step) {
-    result.push(`rgba(${j},${j},${j},1)`);
+
+  const r0 = parseInt(baseColor.slice(1, 3), 16);
+  const g0 = parseInt(baseColor.slice(3, 5), 16);
+  const b0 = parseInt(baseColor.slice(5, 7), 16);
+
+  // 기존 earth: 235 ~ 255
+  const minB = 235 / 255;
+  const maxB = 1.0;
+
+  const bucketCount = Math.ceil((255 - 235) / step);
+
+  for (let i = 0; i < bucketCount; i++) {
+    const t = i / (bucketCount - 1); // 0 → 1
+    const brightness = minB + t * (maxB - minB);
+
+    const r = Math.round(r0 * brightness);
+    const g = Math.round(g0 * brightness);
+    const b = Math.round(b0 * brightness);
+
+    result.push(`rgba(${r}, ${g}, ${b}, 1)`);
   }
+
   result.indexFor = m =>
     Math.floor((Math.min(m, maxWind) / maxWind) * (result.length - 1));
+
   return result;
 }
 
@@ -205,18 +225,21 @@ export class EarthWindOLAnimator {
     map,
     grid,
     maxIntensity = 17, // 색상 버킷 스케일 상한
+    color = '#ffffff',
   }) {
     this.map = map;
     this.grid = grid;
     this.maxIntensity = maxIntensity;
+    this.color = color;
     const dx = grid.header.dx;
     this.velocityScaleFactor = dx === 27000 ? 1 / 60000 : 1 / 30000;
-    this.particleMultiplier = dx === 27000 ? 0.003 : 0.005;
+    this.particleMultiplier = dx === 27000 ? 0.005 : 0.003;
 
     // 바람 세기에 따라 어떤 색을 쓸지 배열 생성
     this._colorStyles = windIntensityColorScale(
       INTENSITY_SCALE_STEP,
       maxIntensity,
+      this.color,
     );
     this._buckets = this._colorStyles.map(() => []);
     this._particles = [];

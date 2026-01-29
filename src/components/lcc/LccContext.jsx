@@ -16,6 +16,7 @@ export const LccProvider = ({ children }) => {
     arrowsOpacity: 1.0,
     arrowColor: '#FFFF00',
     windColor: '#1480FE',
+    earthWindColor: '#ffffff',
   });
 
   const [layerVisible, setLayerVisible] = useState({

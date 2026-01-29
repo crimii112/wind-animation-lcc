@@ -3,11 +3,10 @@ import VectorSource from 'ol/source/Vector';
 import { Fill, RegularShape, Stroke, Style } from 'ol/style';
 import { MultiPoint, MultiPolygon, Point } from 'ol/geom';
 import { Feature } from 'ol';
-import GeoJSON from 'ol/format/GeoJSON';
 import { transform } from 'ol/proj';
 
 export function createLccLayers() {
-  // 시도 shp
+  // 시도 경계(shp)
   const sourceSidoShp = new VectorSource({ wrapX: false });
   const layerSidoShp = new VectorLayer({
     source: sourceSidoShp,
@@ -15,7 +14,7 @@ export function createLccLayers() {
     opacity: 0.5,
   });
 
-  // 모델링 농도 히트맵(polygon)
+  // 모델링 농도장(polygon)
   const sourceCoords = new VectorSource({ wrapX: false });
   const layerCoords = new VectorLayer({
     source: sourceCoords,
@@ -23,14 +22,14 @@ export function createLccLayers() {
     opacity: 0.3,
   });
 
-  // 바람 화살표(Point)
+  // 바람장 화살표(Point)
   const sourceArrows = new VectorSource({ wrapX: false });
   const layerArrows = new VectorLayer({
     source: sourceArrows,
     id: 'arrows',
   });
 
-  // 바람 애니메이션
+  // 바람장 애니메이션
   const layerWindCanvas = new VectorLayer({
     id: 'windCanvas',
     source: new VectorSource(),
@@ -38,7 +37,7 @@ export function createLccLayers() {
     updateWhileAnimating: true,
   });
 
-  // earth 애니메이션
+  // 바람장 earth
   const layerEarthWindCanvas = new VectorLayer({
     id: 'earthWindCanvas',
     source: new VectorSource(),
@@ -47,7 +46,7 @@ export function createLccLayers() {
     updateWhileInteracting: true,
   });
 
-  // 그리드
+  // 격자
   const sourceGrid = new VectorSource({ wrapX: false });
   const layerGrid = new VectorLayer({
     id: 'grid',
@@ -68,7 +67,58 @@ export function createLccLayers() {
   };
 }
 
-/** 모델링 농도 히트맵 feature 생성 */
+/* 모델링 농도 히트맵 feature 생성 - data 전체 polygon 생성 (미사용) */
+// bgPoll 변경 시 기존 스타일 캐시 초기화
+// useEffect(() => {
+//   polygonStyleCache.current = {};
+// }, [settings.bgPoll]);
+
+// const polygonStyleCache = useRef({});
+// const getPolygonStyle = value => {
+//   const key = `${settings.bgPoll}-${value}`;
+//   if (polygonStyleCache.current[key]) {
+//     return polygonStyleCache.current[key];
+//   }
+
+//   const color = rgbs[settings.bgPoll].find(
+//     s => value >= s.min && value < s.max
+//   )?.color;
+
+//   if (!color) return null;
+
+//   const style = new Style({
+//     fill: new Fill({
+//       color: color.replace(
+//         /rgba\(([^,]+), ([^,]+), ([^,]+), ([^)]+)\)/,
+//         (_, r, g, b) => `rgba(${r}, ${g}, ${b}, 1)`
+//       ),
+//     }),
+//   });
+
+//   polygonStyleCache.current[key] = style;
+//   return style;
+// };
+
+// const createPolygonFeatures = data =>
+//   data.map(item => {
+//     const f = new Feature({
+//       geometry: new Polygon([
+//         [
+//           [item.lon - halfCell, item.lat + halfCell],
+//           [item.lon - halfCell, item.lat - halfCell],
+//           [item.lon + halfCell, item.lat - halfCell],
+//           [item.lon + halfCell, item.lat + halfCell],
+//           [item.lon - halfCell, item.lat + halfCell],
+//         ],
+//       ]),
+//       value: item.value,
+//     });
+
+//     f.setStyle(getPolygonStyle(item.value));
+//     return f;
+//   });
+
+/** 모델링 농도 히트맵 feature 생성 - legend 기준 multipolygon 생성 */
 export function createPolygonFeatures(data, settings, halfCell, rgbs) {
   const colorRange = rgbs[settings.bgPoll];
   const groupedCoordinates = {};
@@ -131,7 +181,7 @@ export function createArrowFeatures(data) {
 }
 
 /** 그리드 Feature 생성 */
-export function createGridFeatures(data, gridStyle) {
+export function createGridFeatures(data) {
   const points = data.map(item =>
     // transform([item.lon, item.lat], 'LCC', 'EPSG:4326'),
     [item.lon, item.lat],
@@ -141,6 +191,19 @@ export function createGridFeatures(data, gridStyle) {
     geometry: new MultiPoint(points),
   });
 
-  feature.setStyle(gridStyle);
+  feature.setStyle(
+    new Style({
+      image: new RegularShape({
+        fill: new Fill({ color: '#ffffff' }),
+        stroke: new Stroke({
+          color: 'rgba(255, 255, 255, 1)',
+          width: 1,
+        }),
+        points: 4,
+        radius: 1,
+        angle: 0,
+      }),
+    }),
+  );
   return [feature];
 }

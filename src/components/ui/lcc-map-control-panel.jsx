@@ -297,6 +297,21 @@ const LccMapControlPanel = ({ datetime }) => {
           />
           <span>바람장 earth</span>
         </label>
+        {layerVisible.earth && (
+          <div className="sub-container">
+            <SubRow>
+              <span className="label-text">색상</span>
+              <ColorPicker>
+                <div style={{ backgroundColor: style.earthWindColor }} />
+                <input
+                  type="color"
+                  value={style.earthWindColor}
+                  onChange={e => updateStyle('earthWindColor', e.target.value)}
+                />
+              </ColorPicker>
+            </SubRow>
+          </div>
+        )}
       </ControlGroup>
       <ControlGroup>
         <label className="main-label">

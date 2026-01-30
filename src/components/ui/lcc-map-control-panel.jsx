@@ -349,11 +349,52 @@ const LccMapControlPanel = ({ datetime, segments, scaleMeta }) => {
         <label className="main-label">
           <input
             type="checkbox"
+            checked={layerVisible.webglWind}
+            onChange={e => toggleLayer('webglWind', e.target.checked)}
+          />
+          <span>바람장 WebGL</span>
+        </label>
+      </ControlGroup>
+      <ControlGroup>
+        <label className="main-label">
+          <input
+            type="checkbox"
             checked={layerVisible.sidoshp}
             onChange={e => toggleLayer('sidoshp', e.target.checked)}
           />
           <span>시도 경계</span>
         </label>
+        {layerVisible.sidoshp && (
+          <div className="sub-container">
+            <SubRow>
+              <span className="label-text">투명도</span>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.1"
+                value={style.sidoshpOpacity}
+                onChange={e =>
+                  updateStyle('sidoshpOpacity', Number(e.target.value))
+                }
+              />
+              <span className="value-text">
+                {Math.round(style.sidoshpOpacity * 100)}%
+              </span>
+            </SubRow>
+            <SubRow>
+              <span className="label-text">색상</span>
+              <ColorPicker>
+                <div style={{ backgroundColor: style.sidoshpColor }} />
+                <input
+                  type="color"
+                  value={style.sidoshpColor}
+                  onChange={e => updateStyle('sidoshpColor', e.target.value)}
+                />
+              </ColorPicker>
+            </SubRow>
+          </div>
+        )}
       </ControlGroup>
       <ControlGroup>
         <label className="main-label">
@@ -487,6 +528,11 @@ const Panel = styled.div`
 
   font-size: 14px;
   color: #333;
+
+  max-height: calc(100vh - 24px);
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  overscroll-behavior: contain;
 `;
 
 const PanelOpenBtn = styled.button`

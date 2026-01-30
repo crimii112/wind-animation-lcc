@@ -30,6 +30,7 @@ import {
   RGBA_RANGES,
   EARTH_SCALE_META,
 } from '@/components/earth/earth-colors';
+import { WebGLWindOLAnimator } from '@/components/webgl/webgl-wind-ol-engine';
 
 /**
  * METCRO2D, ACONC 파일 데이터로 가져옴 => layer 하나
@@ -54,6 +55,7 @@ function Lcc({ mapId, SetMap }) {
   const windParticlesRef = useRef([]);
   const earthWindAnimatorRef = useRef(null);
   const earthScalarAnimatorRef = useRef(null);
+  const webglWindAnimatorRef = useRef(null);
 
   const halfCell = (settings.gridKm * 1000) / 2;
 
@@ -66,9 +68,10 @@ function Lcc({ mapId, SetMap }) {
       layerSidoShp,
       layerCoords,
       layerArrows,
+      layerWindCanvas,
       layerEarthScalarCanvas,
       layerEarthWindCanvas,
-      layerWindCanvas,
+      layerWebGLWindCanvas,
       layerGrid,
     } = layersRef.current;
 
@@ -76,8 +79,9 @@ function Lcc({ mapId, SetMap }) {
     map.addLayer(layerCoords);
     map.addLayer(layerArrows);
     map.addLayer(layerEarthScalarCanvas);
-    map.addLayer(layerEarthWindCanvas);
     map.addLayer(layerWindCanvas);
+    map.addLayer(layerEarthWindCanvas);
+    map.addLayer(layerWebGLWindCanvas);
     map.addLayer(layerGrid);
 
     map.on('singleclick', handleSingleClick);
@@ -87,8 +91,9 @@ function Lcc({ mapId, SetMap }) {
       map.removeLayer(layerCoords);
       map.removeLayer(layerArrows);
       map.removeLayer(layerEarthScalarCanvas);
-      map.removeLayer(layerEarthWindCanvas);
       map.removeLayer(layerWindCanvas);
+      map.removeLayer(layerEarthWindCanvas);
+      map.removeLayer(layerWebGLWindCanvas);
       map.removeLayer(layerGrid);
       map.un('singleclick', handleSingleClick);
     };
@@ -149,6 +154,7 @@ function Lcc({ mapId, SetMap }) {
     l.layerWindCanvas.setVisible(layerVisible.windAnimation);
     l.layerEarthWindCanvas.setVisible(layerVisible.earthWind);
     l.layerEarthScalarCanvas.setVisible(layerVisible.earthScalar);
+    l.layerWebGLWindCanvas.setVisible(layerVisible.webglWind);
     l.layerGrid.setVisible(layerVisible.grid);
   }, [layerVisible]);
 
@@ -159,6 +165,10 @@ function Lcc({ mapId, SetMap }) {
   useEffect(() => {
     layersRef.current.layerArrows.setOpacity(style.arrowsOpacity);
   }, [style.arrowsOpacity]);
+
+  useEffect(() => {
+    layersRef.current.layerSidoShp.setOpacity(style.sidoshpOpacity);
+  }, [style.sidoshpOpacity]);
 
   /** 바람 화살표 스타일 업데이트(색상, 바람 간격 바뀔 때마다) */
   useEffect(() => {
@@ -196,6 +206,19 @@ function Lcc({ mapId, SetMap }) {
       ];
     });
   }, [style.arrowColor, settings.arrowGap]);
+
+  useEffect(() => {
+    const layer = layersRef.current.layerSidoShp;
+
+    layer.setStyle(
+      new Style({
+        stroke: new Stroke({
+          color: style.sidoshpColor,
+          width: 1.5,
+        }),
+      }),
+    );
+  }, [style.sidoshpColor]);
 
   /* 시도 shp 데이터 요청 */
   const getSidoShp = async () => {
@@ -486,13 +509,59 @@ function Lcc({ mapId, SetMap }) {
     style.earthScalarOpacity,
   ]);
 
+  /** WebGL 바람장 */
+  useEffect(() => {
+    if (!map?.ol_uid) return;
+    if (!earthData || earthData.length === 0) return;
+
+    const layer = layersRef.current.layerWebGLWindCanvas;
+    layer.setVisible(layerVisible.webglWind);
+
+    if (!layerVisible.webglWind) {
+      webglWindAnimatorRef.current?.stop();
+      webglWindAnimatorRef.current?.destroy?.();
+      webglWindAnimatorRef.current = null;
+      return;
+    }
+
+    // u/v 선택
+    const uRec = earthData.find(r => r.header?.parameterNumber === 2);
+    const vRec = earthData.find(r => r.header?.parameterNumber === 3);
+    if (!uRec || !vRec) {
+      console.error('u/v record not found');
+      return;
+    }
+
+    const onPostRender = e => {
+      if (!webglWindAnimatorRef.current) {
+        const animator = new WebGLWindOLAnimator({ map });
+        animator.init(map.getViewport(), e.frameState.pixelRatio || 1);
+        animator.setWindFromUV(uRec, vRec);
+        animator.start();
+        webglWindAnimatorRef.current = animator;
+      }
+
+      webglWindAnimatorRef.current.drawFrame(e.frameState);
+    };
+
+    layer.on('postrender', onPostRender);
+
+    return () => {
+      layer.un('postrender', onPostRender);
+      webglWindAnimatorRef.current?.stop();
+      webglWindAnimatorRef.current?.destroy?.();
+      webglWindAnimatorRef.current = null;
+    };
+  }, [map?.ol_uid, earthData, layerVisible.webglWind]);
+
   /* map render 관리 */
   useEffect(() => {
     if (!map?.ol_uid) return;
     if (
       !layerVisible.windAnimation &&
       !layerVisible.earthWind &&
-      !layerVisible.earthScalar
+      !layerVisible.earthScalar &&
+      !layerVisible.webglWind
     )
       return;
 
@@ -513,6 +582,7 @@ function Lcc({ mapId, SetMap }) {
     layerVisible.windAnimation,
     layerVisible.earthWind,
     layerVisible.earthScalar,
+    layerVisible.webglWind,
   ]);
 
   return (

@@ -14,19 +14,22 @@ export const LccProvider = ({ children }) => {
   const [style, setStyle] = useState({
     coordsOpacity: 0.3,
     arrowsOpacity: 1.0,
-    earthScalarOpacity: 0.7,
+    earthScalarOpacity: 0.5,
+    sidoshpOpacity: 1.0,
     arrowColor: '#FFFF00',
     windColor: '#1480FE',
     earthWindColor: '#ffffff',
+    sidoshpColor: '#000000',
   });
 
   const [layerVisible, setLayerVisible] = useState({
     sidoshp: true,
-    coords: true,
-    arrows: true,
-    windAnimation: true,
-    earthWind: true,
+    coords: false,
+    arrows: false,
+    windAnimation: false,
+    earthWind: false,
     earthScalar: true,
+    webglWind: true,
     grid: false,
   });
 

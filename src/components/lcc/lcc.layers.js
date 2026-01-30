@@ -4,6 +4,8 @@ import { Fill, RegularShape, Stroke, Style } from 'ol/style';
 import { MultiPoint, MultiPolygon, Point } from 'ol/geom';
 import { Feature } from 'ol';
 import { transform } from 'ol/proj';
+import ImageLayer from 'ol/layer/Image';
+import ImageCanvasSource from 'ol/source/ImageCanvas';
 
 export function createLccLayers() {
   // 시도 경계(shp)
@@ -55,6 +57,22 @@ export function createLccLayers() {
     updateWhileInteracting: true,
   });
 
+  // 바람장 webGL
+  const layerWebGLWindCanvas = new ImageLayer({
+    id: 'webglWindCanvas',
+    source: new ImageCanvasSource({
+      projection: 'LCC',
+      canvasFunction: (extent, resolution, pixelRatio, size) => {
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.floor(size[0] * pixelRatio);
+        canvas.height = Math.floor(size[1] * pixelRatio);
+        canvas.style.width = `${size[0]}px`;
+        canvas.style.height = `${size[1]}px`;
+        return canvas;
+      },
+    }),
+  });
+
   // 격자
   const sourceGrid = new VectorSource({ wrapX: false });
   const layerGrid = new VectorLayer({
@@ -72,6 +90,7 @@ export function createLccLayers() {
     layerWindCanvas,
     layerEarthWindCanvas,
     layerEarthScalarCanvas,
+    layerWebGLWindCanvas,
     sourceGrid,
     layerGrid,
   };

@@ -518,8 +518,7 @@ function Lcc({ mapId, SetMap }) {
     layer.setVisible(layerVisible.webglWind);
 
     if (!layerVisible.webglWind) {
-      webglWindAnimatorRef.current?.stop();
-      webglWindAnimatorRef.current?.destroy?.();
+      webglWindAnimatorRef.current?.stop?.();
       webglWindAnimatorRef.current = null;
       return;
     }
@@ -532,25 +531,46 @@ function Lcc({ mapId, SetMap }) {
       return;
     }
 
-    const onPostRender = e => {
-      if (!webglWindAnimatorRef.current) {
-        const animator = new WebGLWindOLAnimator({ map });
-        animator.init(map.getViewport(), e.frameState.pixelRatio || 1);
-        animator.setWindFromUV(uRec, vRec);
-        animator.start();
-        webglWindAnimatorRef.current = animator;
-      }
+    const animator = new WebGLWindOLAnimator({
+      map,
+      uRec,
+      vRec,
+      options: {
+        numParticles: 80000,
+        speedFactor: 1.5,
+        fadeOpacity: 0.94,
+        dropRate: 0.01,
+        dropRateBump: 0.02,
+      },
+    });
 
-      webglWindAnimatorRef.current.drawFrame(e.frameState);
+    const onPostRender = e => {
+      animator.drawFrame(e);
+    };
+
+    const onMoveStart = () => {
+      animator.stop();
+      animator.clearTrails();
+      layer.setVisible(false);
+    };
+
+    const onMoveEnd = () => {
+      animator.clearTrails();
+      layer.setVisible(true);
     };
 
     layer.on('postrender', onPostRender);
+    map.on('movestart', onMoveStart);
+    map.on('moveend', onMoveEnd);
+
+    webglWindAnimatorRef.current = animator;
 
     return () => {
       layer.un('postrender', onPostRender);
-      webglWindAnimatorRef.current?.stop();
-      webglWindAnimatorRef.current?.destroy?.();
+      map.un('movestart', onMoveStart);
+      map.un('moveend', onMoveEnd);
       webglWindAnimatorRef.current = null;
+      animator.stop();
     };
   }, [map?.ol_uid, earthData, layerVisible.webglWind]);
 

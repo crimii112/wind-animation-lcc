@@ -72,7 +72,6 @@ function Lcc({ mapId, SetMap }) {
       layerWindCanvas,
       layerEarthScalarCanvas,
       layerEarthWindCanvas,
-      layerWebGLWindCanvas,
       layerGrid,
     } = layersRef.current;
 
@@ -82,7 +81,6 @@ function Lcc({ mapId, SetMap }) {
     map.addLayer(layerArrows);
     map.addLayer(layerWindCanvas);
     map.addLayer(layerEarthWindCanvas);
-    map.addLayer(layerWebGLWindCanvas);
     map.addLayer(layerGrid);
 
     map.on('singleclick', handleSingleClick);
@@ -94,7 +92,6 @@ function Lcc({ mapId, SetMap }) {
       map.removeLayer(layerArrows);
       map.removeLayer(layerWindCanvas);
       map.removeLayer(layerEarthWindCanvas);
-      map.removeLayer(layerWebGLWindCanvas);
       map.removeLayer(layerGrid);
       map.un('singleclick', handleSingleClick);
     };

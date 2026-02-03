@@ -345,7 +345,7 @@ const LccMapControlPanel = ({ datetime, segments, scaleMeta }) => {
           </div>
         )}
       </ControlGroup>
-      <ControlGroup>
+      {/* <ControlGroup>
         <label className="main-label">
           <input
             type="checkbox"
@@ -354,7 +354,7 @@ const LccMapControlPanel = ({ datetime, segments, scaleMeta }) => {
           />
           <span>바람장 WebGL</span>
         </label>
-      </ControlGroup>
+      </ControlGroup> */}
       <ControlGroup>
         <label className="main-label">
           <input

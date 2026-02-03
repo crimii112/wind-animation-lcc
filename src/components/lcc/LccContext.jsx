@@ -29,7 +29,7 @@ export const LccProvider = ({ children }) => {
     windAnimation: false,
     earthWind: false,
     earthScalar: true,
-    webglWind: true,
+    webglWind: false,
     grid: false,
   });
 

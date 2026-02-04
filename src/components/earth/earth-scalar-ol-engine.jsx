@@ -129,6 +129,8 @@ export class EarthScalarOLAnimator {
     // earth scalar color scale
     this._colorScale = segmentedColorScale(segments);
 
+    this._pixelRatio = 1;
+
     this._canvas = document.createElement('canvas');
     this._ctx = this._canvas.getContext('2d');
   }
@@ -138,12 +140,33 @@ export class EarthScalarOLAnimator {
     if (!size) return false;
 
     const [w, h] = size;
-    if (this._canvas.width !== w || this._canvas.height !== h) {
-      this._canvas.width = w;
-      this._canvas.height = h;
-      return true;
-    }
-    return false;
+
+    const ratio =
+      (typeof this.map.getPixelRatio === 'function' &&
+        this.map.getPixelRatio()) ||
+      window.devicePixelRatio ||
+      1;
+
+    const targetW = Math.round(w * ratio);
+    const targetH = Math.round(h * ratio);
+
+    const needResize =
+      this._canvas.width !== targetW ||
+      this._canvas.height !== targetH ||
+      this._pixelRatio !== ratio;
+
+    if (!needResize) return false;
+
+    this._pixelRatio = ratio;
+
+    this._canvas.width = targetW;
+    this._canvas.height = targetH;
+
+    this._ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+
+    this._ctx.clearRect(0, 0, w, h);
+
+    return true;
   }
 
   drawFrame(targetCtx) {
@@ -154,6 +177,7 @@ export class EarthScalarOLAnimator {
     if (!size) return;
 
     const [width, height] = size;
+
     ctx.clearRect(0, 0, width, height);
 
     for (let y = 0; y < height; y += this.step) {
@@ -172,6 +196,7 @@ export class EarthScalarOLAnimator {
 
     targetCtx.save();
     targetCtx.globalCompositeOperation = 'source-over';
+
     targetCtx.drawImage(this._canvas, 0, 0);
     targetCtx.restore();
   }

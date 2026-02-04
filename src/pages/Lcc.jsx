@@ -157,7 +157,6 @@ function Lcc({ mapId, SetMap }) {
     l.layerWindCanvas.setVisible(layerVisible.windAnimation);
     l.layerEarthWindCanvas.setVisible(layerVisible.earthWind);
     l.layerEarthScalarCanvas.setVisible(layerVisible.earthScalar);
-    l.layerWebGLWindCanvas.setVisible(layerVisible.webglWind);
     l.layerGrid.setVisible(layerVisible.grid);
   }, [layerVisible]);
 
@@ -363,15 +362,18 @@ function Lcc({ mapId, SetMap }) {
 
   useEffect(() => {
     if (!map?.ol_uid) return;
-    let animationFrameId;
+    if (!layerVisible.windAnimation) return;
+
+    const windCanvasLayer = layersRef.current.layerWindCanvas;
+    let rafId;
 
     // 애니메이션 루프
     const animate = () => {
-      animationFrameId = requestAnimationFrame(animate);
+      windCanvasLayer.changed();
+      rafId = requestAnimationFrame(animate);
     };
 
     const handlePostRender = e => {
-      if (!layerVisible.windAnimation) return;
       if (windParticlesRef.current.length === 0) return;
 
       const ctx = e.context;
@@ -386,15 +388,11 @@ function Lcc({ mapId, SetMap }) {
       ctx.restore();
     };
 
-    const windCanvasLayer = layersRef.current.layerWindCanvas;
-
-    windCanvasLayer.setVisible(layerVisible.windAnimation);
     windCanvasLayer.on('postrender', handlePostRender);
-
-    animationFrameId = requestAnimationFrame(animate);
+    rafId = requestAnimationFrame(animate);
 
     return () => {
-      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+      if (rafId) cancelAnimationFrame(rafId);
       windCanvasLayer.un('postrender', handlePostRender);
     };
   }, [map?.ol_uid, layerVisible.windAnimation]);
@@ -425,7 +423,6 @@ function Lcc({ mapId, SetMap }) {
     if (!layerVisible.earthWind) {
       earthWindAnimatorRef.current?.stop?.();
       earthWindAnimatorRef.current = null;
-      // map.render();
       return;
     }
 
@@ -453,13 +450,11 @@ function Lcc({ mapId, SetMap }) {
       animator.stop();
       animator.clearTrails();
       layer.setVisible(false); // ← 잠시 사라지게
-      // map.render();
     };
 
     const onMoveEnd = () => {
       layer.setVisible(true);
       animator.start(); // 내부에서 rebuildField 호출
-      // map.render();
     };
 
     layer.on('postrender', onPostRender);
@@ -482,7 +477,6 @@ function Lcc({ mapId, SetMap }) {
   /** earth 농도장 */
   useEffect(() => {
     if (!map?.ol_uid) return;
-    if (!earthData || earthData.length === 0) return;
 
     const layer = layersRef.current.layerEarthScalarCanvas;
     layer.setVisible(layerVisible.earthScalar);
@@ -490,9 +484,11 @@ function Lcc({ mapId, SetMap }) {
     // 토글 OFF
     if (!layerVisible.earthScalar) {
       earthScalarAnimatorRef.current = null;
-      map.render();
+      layer.changed();
       return;
     }
+
+    if (!earthData || earthData.length === 0) return;
 
     const scalarRec = earthData.find(
       r => r.header?.parameterCategory === 0 && r.header?.parameterNumber === 0,
@@ -503,7 +499,6 @@ function Lcc({ mapId, SetMap }) {
     }
 
     const grid = buildScalarGrid(scalarRec);
-
     const earthSegments = EARTH_SEGMENTS_MAP[settings.bgPoll];
 
     const animator = new EarthScalarOLAnimator({
@@ -520,11 +515,12 @@ function Lcc({ mapId, SetMap }) {
     layer.on('postrender', onPostRender);
     earthScalarAnimatorRef.current = animator;
 
-    map.render();
+    layer.changed();
 
     return () => {
       layer.un('postrender', onPostRender);
       earthScalarAnimatorRef.current = null;
+      layer.changed();
     };
   }, [
     map?.ol_uid,
@@ -579,13 +575,7 @@ function Lcc({ mapId, SetMap }) {
   /* map render 관리 */
   useEffect(() => {
     if (!map?.ol_uid) return;
-    if (
-      !layerVisible.windAnimation &&
-      !layerVisible.earthWind &&
-      !layerVisible.earthScalar &&
-      !layerVisible.webglWind
-    )
-      return;
+    if (!layerVisible.earthWind) return;
 
     let rafId;
 
@@ -599,13 +589,7 @@ function Lcc({ mapId, SetMap }) {
     return () => {
       if (rafId) cancelAnimationFrame(rafId);
     };
-  }, [
-    map,
-    layerVisible.windAnimation,
-    layerVisible.earthWind,
-    layerVisible.earthScalar,
-    layerVisible.webglWind,
-  ]);
+  }, [map, layerVisible.earthWind]);
 
   return (
     <MapDiv id={mapId}>

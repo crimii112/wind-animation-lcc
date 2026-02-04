@@ -57,22 +57,6 @@ export function createLccLayers() {
     updateWhileInteracting: true,
   });
 
-  // 바람장 webGL
-  const layerWebGLWindCanvas = new ImageLayer({
-    id: 'webglWindCanvas',
-    source: new ImageCanvasSource({
-      projection: 'LCC',
-      canvasFunction: (extent, resolution, pixelRatio, size) => {
-        const canvas = document.createElement('canvas');
-        canvas.width = Math.floor(size[0] * pixelRatio);
-        canvas.height = Math.floor(size[1] * pixelRatio);
-        canvas.style.width = `${size[0]}px`;
-        canvas.style.height = `${size[1]}px`;
-        return canvas;
-      },
-    }),
-  });
-
   // 격자
   const sourceGrid = new VectorSource({ wrapX: false });
   const layerGrid = new VectorLayer({
@@ -90,7 +74,6 @@ export function createLccLayers() {
     layerWindCanvas,
     layerEarthWindCanvas,
     layerEarthScalarCanvas,
-    layerWebGLWindCanvas,
     sourceGrid,
     layerGrid,
   };

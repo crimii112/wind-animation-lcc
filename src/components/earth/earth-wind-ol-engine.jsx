@@ -223,6 +223,9 @@ export class EarthWindOLAnimator {
     this.grid = grid;
     this.maxIntensity = maxIntensity;
     this.color = color;
+
+    this._pixelRatio = 1;
+
     const dx = grid.header.dx;
     this.velocityScaleFactor = dx === 27000 ? 1 / 60000 : 1 / 30000;
     this.particleMultiplier = dx === 27000 ? 0.005 : 0.003;
@@ -255,14 +258,36 @@ export class EarthWindOLAnimator {
     if (!size) return false;
 
     const [w, h] = size;
-    if (this._trailCanvas.width !== w || this._trailCanvas.height !== h) {
-      this._trailCanvas.width = w;
-      this._trailCanvas.height = h;
-      // 리사이즈 시 트레일 초기화
-      this._trailCtx.clearRect(0, 0, w, h);
-      return true;
-    }
-    return false;
+
+    const ratio =
+      (typeof this.map.getPixelRatio === 'function' &&
+        this.map.getPixelRatio()) ||
+      window.devicePixelRatio ||
+      1;
+
+    const canvas = this._trailCanvas;
+    const ctx = this._trailCtx;
+
+    const targetW = Math.round(w * ratio);
+    const targetH = Math.round(h * ratio);
+
+    const needResize =
+      canvas.width !== targetW ||
+      canvas.height !== targetH ||
+      this._pixelRatio !== ratio;
+
+    if (!needResize) return false;
+
+    this._pixelRatio = ratio;
+
+    canvas.width = targetW;
+    canvas.height = targetH;
+
+    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+
+    ctx.clearRect(0, 0, w, h);
+
+    return true;
   }
 
   // 바람 필드랑 점 새로 만들기
@@ -338,7 +363,8 @@ export class EarthWindOLAnimator {
     if (!this._running || !this._field) return;
 
     // 혹시라도 사이즈 바뀌면 보정
-    this._ensureCanvasSize();
+    const resized = this._ensureCanvasSize();
+    if (resized) this._ensureCanvasSize();
 
     const field = this._field;
     const bounds = field._bounds;

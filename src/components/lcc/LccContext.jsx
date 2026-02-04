@@ -23,13 +23,13 @@ export const LccProvider = ({ children }) => {
   });
 
   const [layerVisible, setLayerVisible] = useState({
-    sidoshp: true,
+    sidoshp: false,
     coords: false,
     arrows: false,
     windAnimation: false,
     earthWind: false,
-    earthScalar: true,
-    webglWind: false,
+    earthScalar: false,
+    webglWind: true,
     grid: false,
   });
 

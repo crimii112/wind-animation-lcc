@@ -1,5 +1,7 @@
 'use strict';
 
+import { RGBA_RANGES, rgbaToRgbArray } from '@/components/earth/earth-colors';
+
 function createShader(gl, type, source) {
   const shader = gl.createShader(type);
   gl.shaderSource(shader, source);
@@ -102,11 +104,53 @@ function bindFramebuffer(gl, framebuffer, texture) {
   }
 }
 
+function buildColorRampFromRanges(ranges) {
+  const finiteForDomain = ranges.filter(
+    r => Number.isFinite(r.min) && Number.isFinite(r.max),
+  );
+
+  if (!finiteForDomain.length) {
+    const out = new Uint8Array(16 * 16 * 4);
+    for (let i = 0; i < 256; i++) {
+      out[i * 4 + 0] = 255;
+      out[i * 4 + 1] = 0;
+      out[i * 4 + 2] = 0;
+      out[i * 4 + 3] = 255;
+    }
+    return out;
+  }
+
+  const minV = finiteForDomain[0].min;
+  const maxV = finiteForDomain[finiteForDomain.length - 1].max;
+
+  const out = new Uint8Array(16 * 16 * 4);
+
+  for (let i = 0; i < 256; i++) {
+    const t = i / 255;
+    const v = minV + t * (maxV - minV);
+
+    const seg =
+      ranges.find(r => v >= r.min && v < r.max) || ranges[ranges.length - 1];
+
+    const [rr, gg, bb] = rgbaToRgbArray(seg.color);
+
+    const idx = i * 4;
+    out[idx + 0] = rr;
+    out[idx + 1] = gg;
+    out[idx + 2] = bb;
+    out[idx + 3] = 255;
+  }
+
+  return out;
+}
+
 const drawVert =
   "precision mediump float;\n\nattribute float a_index;\n\nuniform sampler2D u_particles;\nuniform float u_particles_res;\n\nvarying vec2 v_particle_pos;\n\nvoid main() {\n    vec4 color = texture2D(u_particles, vec2(\n        fract(a_index / u_particles_res),\n        floor(a_index / u_particles_res) / u_particles_res));\n\n    // decode current particle position from the pixel's RGBA value\n    v_particle_pos = vec2(\n        color.r / 255.0 + color.b,\n        color.g / 255.0 + color.a);\n\n    gl_PointSize = 1.0;\n    gl_Position = vec4(2.0 * v_particle_pos.x - 1.0, 1.0 - 2.0 * v_particle_pos.y, 0, 1);\n}\n";
 
+// const drawFrag =
+//   'precision mediump float;\n\nuniform sampler2D u_wind;\nuniform sampler2D u_scalar;\nuniform vec2 u_wind_min;\nuniform vec2 u_wind_max;\nuniform sampler2D u_color_ramp;\n\nvarying vec2 v_particle_pos;\n\nvoid main() {\n    vec2 velocity = mix(u_wind_min, u_wind_max, texture2D(u_wind, v_particle_pos).rg);\n    float speed_t = length(velocity) / length(u_wind_max);\n\n    // color ramp is encoded in a 16x16 texture\n    vec2 ramp_pos = vec2(\n        fract(16.0 * speed_t),\n        floor(16.0 * speed_t) / 16.0);\n\n    gl_FragColor = texture2D(u_color_ramp, ramp_pos);\n}\n';
 const drawFrag =
-  'precision mediump float;\n\nuniform sampler2D u_wind;\nuniform vec2 u_wind_min;\nuniform vec2 u_wind_max;\nuniform sampler2D u_color_ramp;\n\nvarying vec2 v_particle_pos;\n\nvoid main() {\n    vec2 velocity = mix(u_wind_min, u_wind_max, texture2D(u_wind, v_particle_pos).rg);\n    float speed_t = length(velocity) / length(u_wind_max);\n\n    // color ramp is encoded in a 16x16 texture\n    vec2 ramp_pos = vec2(\n        fract(16.0 * speed_t),\n        floor(16.0 * speed_t) / 16.0);\n\n    gl_FragColor = texture2D(u_color_ramp, ramp_pos);\n}\n';
+  'precision mediump float;\n\nuniform sampler2D u_wind;\nuniform sampler2D u_scalar;\nuniform sampler2D u_color_ramp;\n\nuniform vec2 u_wind_min;\nuniform vec2 u_wind_max;\nuniform int u_color_mode;\n\nvarying vec2 v_particle_pos;\n\nvoid main() {\n  float t;\n\n  if (u_color_mode == 0) {\n    vec2 velocity = mix(\n      u_wind_min,\n     u_wind_max,\n     texture2D(u_wind, v_particle_pos).rg\n    );\n    t = length(velocity) / length(u_wind_max);\n  } else {\n    t = texture2D(u_scalar, v_particle_pos).r;\n }\n\n t = clamp(t, 0.0, 1.0);\n\n vec2 ramp_pos = vec2(\n   fract(16.0 * t),\n    floor(16.0 * t) / 16.0\n  );\n\n  gl_FragColor = texture2D(u_color_ramp, ramp_pos);\n}\n';
 
 const quadVert =
   'precision mediump float;\n\nattribute vec2 a_pos;\n\nvarying vec2 v_tex_pos;\n\nvoid main() {\n    v_tex_pos = a_pos;\n    gl_Position = vec4(1.0 - 2.0 * a_pos, 0, 1);\n}\n';
@@ -131,6 +175,11 @@ const DEFAULT_RAMP = {
 class WindGL {
   constructor(gl) {
     this.gl = gl;
+
+    this.colorMode = 0; // 0: wind, 1: scalar
+
+    this.scalarData = null;
+    this.scalarTexture = null;
 
     this.fadeOpacity = 0.998; // how fast the particle trails fade on each frame
     this.speedFactor = 0.2; // how fast the particles move
@@ -171,12 +220,31 @@ class WindGL {
       gl.canvas.height,
     );
   }
+
   setColorRamp(colors) {
     // lookup texture for colorizing the particles according to their speed
     this.colorRampTexture = createTexture(
       this.gl,
       this.gl.LINEAR,
       getColorRamp(colors),
+      16,
+      16,
+    );
+  }
+
+  setColorRampByPoll(poll) {
+    const ranges = RGBA_RANGES[poll];
+    if (!ranges) {
+      this.setColorRamp(DEFAULT_RAMP);
+      return;
+    }
+
+    const rampData = buildColorRampFromRanges(ranges);
+
+    this.colorRampTexture = createTexture(
+      this.gl,
+      this.gl.LINEAR,
+      rampData,
       16,
       16,
     );
@@ -223,6 +291,24 @@ class WindGL {
   setWind(windData) {
     this.windData = windData;
     this.windTexture = createTexture(this.gl, this.gl.LINEAR, windData.image);
+  }
+
+  setScalar(scalarData, poll) {
+    this.scalarData = scalarData;
+    this.scalarTexture = createTexture(
+      this.gl,
+      this.gl.LINEAR,
+      scalarData.image,
+    );
+
+    this.setColorRampByPoll(poll);
+    this.setColorMode(poll);
+  }
+
+  setColorMode(poll) {
+    console.log('[WindGL] poll = ', poll);
+    this.colorMode =
+      poll !== 'WIND' && !!this.scalarData && !!this.scalarTexture ? 1 : 0;
   }
 
   draw() {
@@ -282,15 +368,23 @@ class WindGL {
     const program = this.drawProgram;
 
     gl.useProgram(program.program);
+
     bindAttribute(gl, this.particleIndexBuffer, program.a_index, 1);
+
     bindTexture(gl, this.colorRampTexture, 2);
+
+    if (this.scalarTexture) bindTexture(gl, this.scalarTexture, 3);
 
     gl.uniform1i(program.u_wind, 0);
     gl.uniform1i(program.u_particles, 1);
     gl.uniform1i(program.u_color_ramp, 2);
+    gl.uniform1i(program.u_scalar, 3);
+
     gl.uniform1f(program.u_particles_res, this.particleStateResolution);
     gl.uniform2f(program.u_wind_min, this.windData.uMin, this.windData.vMin);
     gl.uniform2f(program.u_wind_max, this.windData.uMax, this.windData.vMax);
+
+    gl.uniform1i(program.u_color_mode, this.colorMode);
 
     gl.drawArrays(gl.POINTS, 0, this._numParticles);
   }

@@ -8,6 +8,7 @@ export const LccProvider = ({ children }) => {
     layer: 0,
     tstep: 0,
     bgPoll: 'O3',
+    webglPoll: 'WIND',
     arrowGap: 3,
   });
 

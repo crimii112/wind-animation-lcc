@@ -215,11 +215,13 @@ function buildFieldForViewport({
 export class EarthWindOLAnimator {
   constructor({
     map,
+    layer,
     grid,
     maxIntensity = 17, // 색상 버킷 스케일 상한
     color = '#ffffff',
   }) {
     this.map = map;
+    this.layer = layer;
     this.grid = grid;
     this.maxIntensity = maxIntensity;
     this.color = color;
@@ -342,6 +344,7 @@ export class EarthWindOLAnimator {
       if (t - this._lastTick >= FRAME_RATE_MS) {
         this._lastTick = t;
         // this.map.render();
+        this.layer.changed();
       }
       requestAnimationFrame(loop);
     };

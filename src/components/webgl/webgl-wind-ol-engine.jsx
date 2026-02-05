@@ -1,7 +1,7 @@
 import WindGL from './wind-gl';
 
 export class WebGLWindOLAnimator {
-  constructor({ map, extentLCC, windData }) {
+  constructor({ map, extentLCC, windData, scalarData = null, poll = 'WIND' }) {
     this.map = map;
     this.extentLCC = extentLCC;
 
@@ -15,25 +15,34 @@ export class WebGLWindOLAnimator {
     const gl = this.canvas.getContext('webgl', { antialias: false });
     this.wind = new WindGL(gl);
 
+    // particle 수
     const particleMultiplier = windData.gridKm === '9' ? 1.3 : 0.9;
     const n = windData.width * windData.height * particleMultiplier;
     this.wind.numParticles = Math.min(n, 65536);
 
+    // webgl 데이터 주입
     this.wind.setWind(windData);
 
-    this._running = true;
+    if (scalarData) this.wind.setScalar(scalarData, poll);
 
+    this.wind.setColorMode(poll);
+    this.wind.setColorRampByPoll(poll);
+
+    this._running = true;
     this._bind();
   }
 
   _bind() {
     this._onMoveStart = () => {
+      this._running = false;
       this.canvas.style.display = 'none';
     };
 
     this._onMoveEnd = () => {
       this.updateCanvas();
       this.canvas.style.display = 'block';
+      this._running = true;
+      this._loop();
     };
 
     this.map.on('movestart', this._onMoveStart);
@@ -45,9 +54,7 @@ export class WebGLWindOLAnimator {
 
   _loop = () => {
     if (!this._running) return;
-
-    if (this.wind.windData) this.wind.draw();
-
+    this.wind.draw();
     this._rafId = requestAnimationFrame(this._loop);
   };
 
@@ -66,7 +73,7 @@ export class WebGLWindOLAnimator {
       return;
     }
 
-    this.canvas.style.display = 'block';
+    // this.canvas.style.display = 'block';
 
     const bottomLeftPx = this.map.getPixelFromCoordinate([minX, minY]);
     const topRightPx = this.map.getPixelFromCoordinate([maxX, maxY]);
@@ -85,9 +92,7 @@ export class WebGLWindOLAnimator {
   destroy() {
     this._running = false;
 
-    if (this._rafId) {
-      cancelAnimationFrame(this._rafId);
-    }
+    if (this._rafId) cancelAnimationFrame(this._rafId);
 
     this.map.un('movestart', this._onMoveStart);
     this.map.un('moveend', this._onMoveEnd);

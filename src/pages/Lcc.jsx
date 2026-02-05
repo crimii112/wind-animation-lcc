@@ -49,7 +49,7 @@ function Lcc({ mapId, SetMap }) {
   const [datetimeTxt, setDatetimeTxt] = useState('');
   const [windData, setWindData] = useState([]);
   const [earthData, setEarthData] = useState([]);
-  const [webGLData, setWebGLData] = useState([]);
+  const [webGLData, setWebGLData] = useState(null);
 
   const layersRef = useRef(createLccLayers());
   const windOverlayRef = useRef([]);
@@ -133,7 +133,13 @@ function Lcc({ mapId, SetMap }) {
   useEffect(() => {
     if (!map?.ol_uid) return;
     getWebGLData();
-  }, [map?.ol_uid, settings.gridKm, settings.layer, settings.tstep]);
+  }, [
+    map?.ol_uid,
+    settings.gridKm,
+    settings.layer,
+    settings.tstep,
+    settings.webglPoll,
+  ]);
 
   // gridKm 변경 시 지도 뷰 재설정
   useEffect(() => {
@@ -341,6 +347,7 @@ function Lcc({ mapId, SetMap }) {
           gridKm: settings.gridKm,
           layer: settings.layer,
           tstep: settings.tstep,
+          poll: settings.webglPoll,
         },
       );
 
@@ -377,8 +384,11 @@ function Lcc({ mapId, SetMap }) {
       if (windParticlesRef.current.length === 0) return;
 
       const ctx = e.context;
+      const pixelRatio = e.frameState.pixelRatio;
+
       ctx.save();
-      ctx.globalCompositeOperation = 'source-over';
+      ctx.scale(pixelRatio, pixelRatio);
+      // ctx.globalCompositeOperation = 'source-over';
 
       windParticlesRef.current.forEach(p => {
         p.update();
@@ -412,17 +422,18 @@ function Lcc({ mapId, SetMap }) {
   // }, [map, windData, layerVisible.windAnimation]);
 
   /* earth 바람장 추가 */
+  const isMovingRef = useRef(false);
   useEffect(() => {
     if (!map?.ol_uid) return;
     if (!earthData || earthData.length === 0) return;
 
     const layer = layersRef.current.layerEarthWindCanvas;
-    layer.setVisible(layerVisible.earthWind);
 
     // 토글 OFF면 정지/정리
     if (!layerVisible.earthWind) {
       earthWindAnimatorRef.current?.stop?.();
       earthWindAnimatorRef.current = null;
+      layer.changed();
       return;
     }
 
@@ -437,24 +448,27 @@ function Lcc({ mapId, SetMap }) {
     const grid = buildGrid(uRec, vRec);
     const animator = new EarthWindOLAnimator({
       map,
+      layer,
       grid,
       maxIntensity: 17,
       color: style.earthWindColor,
     });
 
     const onPostRender = e => {
+      if (isMovingRef.current) return;
       animator.drawFrame(e.context);
     };
 
     const onMoveStart = () => {
-      animator.stop();
+      isMovingRef.current = true;
       animator.clearTrails();
-      layer.setVisible(false); // ← 잠시 사라지게
+      layer.changed();
     };
 
     const onMoveEnd = () => {
-      layer.setVisible(true);
-      animator.start(); // 내부에서 rebuildField 호출
+      isMovingRef.current = false;
+      animator.rebuildField();
+      layer.changed();
     };
 
     layer.on('postrender', onPostRender);
@@ -468,9 +482,8 @@ function Lcc({ mapId, SetMap }) {
       layer.un('postrender', onPostRender);
       map.un('movestart', onMoveStart);
       map.un('moveend', onMoveEnd);
-
-      earthWindAnimatorRef.current = null;
       animator.stop();
+      earthWindAnimatorRef.current = null;
     };
   }, [map?.ol_uid, layerVisible.earthWind, earthData, style.earthWindColor]);
 
@@ -532,34 +545,38 @@ function Lcc({ mapId, SetMap }) {
   /** WebGL 바람장 */
   useEffect(() => {
     if (!map?.ol_uid) return;
-    if (!webGLData || webGLData.length === 0) return;
+    if (!layerVisible.webglWind) return;
+    if (!webGLData) return;
 
     let cancelled = false;
 
     const init = async () => {
-      if (!layerVisible.webglWind) {
-        webglWindAnimatorRef.current?.destroy();
-        webglWindAnimatorRef.current = null;
-        return;
-      }
+      webglWindAnimatorRef.current?.destroy();
+      webglWindAnimatorRef.current = null;
 
-      if (webglWindAnimatorRef.current) return;
-
-      const img = new Image();
-      img.src = `data:image/png;base64,${webGLData.png}`;
-
-      await new Promise(res => (img.onload = res));
+      // wind texture
+      const windImg = new Image();
+      windImg.src = `data:image/png;base64,${webGLData.wind.png}`;
+      await new Promise(res => (windImg.onload = res));
       if (cancelled) return;
 
-      const windData = {
-        ...webGLData.meta,
-        image: img,
-      };
+      // conc texture
+      let concImg = null;
+      if (webGLData.conc) {
+        concImg = new Image();
+        concImg.src = `data:image/png;base64,${webGLData.conc.png}`;
+        await new Promise(res => (concImg.onload = res));
+        if (cancelled) return;
+      }
 
       webglWindAnimatorRef.current = new WebGLWindOLAnimator({
         map,
-        extentLCC: webGLData.meta.extentLCC,
-        windData,
+        extentLCC: webGLData.wind.meta.extentLCC,
+        windData: { ...webGLData.wind.meta, image: windImg },
+        scalarData: concImg
+          ? { image: concImg, min: webGLData.conc.min, max: webGLData.conc.max }
+          : null,
+        poll: webGLData.poll,
       });
     };
 
@@ -571,25 +588,6 @@ function Lcc({ mapId, SetMap }) {
       webglWindAnimatorRef.current = null;
     };
   }, [map?.ol_uid, webGLData, layerVisible.webglWind]);
-
-  /* map render 관리 */
-  useEffect(() => {
-    if (!map?.ol_uid) return;
-    if (!layerVisible.earthWind) return;
-
-    let rafId;
-
-    const renderLoop = () => {
-      map.render();
-      rafId = requestAnimationFrame(renderLoop);
-    };
-
-    rafId = requestAnimationFrame(renderLoop);
-
-    return () => {
-      if (rafId) cancelAnimationFrame(rafId);
-    };
-  }, [map, layerVisible.earthWind]);
 
   return (
     <MapDiv id={mapId}>

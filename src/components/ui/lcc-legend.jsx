@@ -35,7 +35,11 @@ const LccLegend = ({
               <ColorRow key={item.min}>
                 <ColorBox style={{ backgroundColor: item.color }} />
                 <ValueText>
-                  {title === 'O3' ? item.min.toFixed(3) : item.min}
+                  {title === 'O3'
+                    ? item.min.toFixed(3)
+                    : title === 'WIND'
+                      ? item.min.toFixed(1)
+                      : item.min}
                 </ValueText>
               </ColorRow>
             ))}

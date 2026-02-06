@@ -150,7 +150,7 @@ const drawVert =
 // const drawFrag =
 //   'precision mediump float;\n\nuniform sampler2D u_wind;\nuniform sampler2D u_scalar;\nuniform vec2 u_wind_min;\nuniform vec2 u_wind_max;\nuniform sampler2D u_color_ramp;\n\nvarying vec2 v_particle_pos;\n\nvoid main() {\n    vec2 velocity = mix(u_wind_min, u_wind_max, texture2D(u_wind, v_particle_pos).rg);\n    float speed_t = length(velocity) / length(u_wind_max);\n\n    // color ramp is encoded in a 16x16 texture\n    vec2 ramp_pos = vec2(\n        fract(16.0 * speed_t),\n        floor(16.0 * speed_t) / 16.0);\n\n    gl_FragColor = texture2D(u_color_ramp, ramp_pos);\n}\n';
 const drawFrag =
-  'precision mediump float;\n\nuniform sampler2D u_wind;\nuniform sampler2D u_scalar;\nuniform sampler2D u_color_ramp;\n\nuniform vec2 u_wind_min;\nuniform vec2 u_wind_max;\nuniform int u_color_mode;\n\nvarying vec2 v_particle_pos;\n\nvoid main() {\n  float t;\n\n  if (u_color_mode == 0) {\n    vec2 velocity = mix(\n      u_wind_min,\n     u_wind_max,\n     texture2D(u_wind, v_particle_pos).rg\n    );\n    t = length(velocity) / length(u_wind_max);\n  } else {\n    t = texture2D(u_scalar, v_particle_pos).r;\n }\n\n t = clamp(t, 0.0, 1.0);\n\n vec2 ramp_pos = vec2(\n   fract(16.0 * t),\n    floor(16.0 * t) / 16.0\n  );\n\n  gl_FragColor = texture2D(u_color_ramp, ramp_pos);\n}\n';
+  'precision mediump float;\n\nuniform sampler2D u_wind;\nuniform sampler2D u_scalar;\nuniform sampler2D u_color_ramp;\n\nuniform vec2 u_wind_min;\nuniform vec2 u_wind_max;\nuniform int u_color_mode;\n\nvarying vec2 v_particle_pos;\n\nvoid main() {\n  float t;\n\n  if (u_color_mode == 0) {\n    vec2 velocity = mix(\n      u_wind_min,\n     u_wind_max,\n     texture2D(u_wind, v_particle_pos).rg\n    );\n    t = length(velocity) / length(u_wind_max);\n  } else {\n    t = texture2D(u_scalar, v_particle_pos).r;\n }\n\n t = clamp(t, 0.0, 1.0);\n\n  float idx = floor(t * 255.0);\n  float x = mod(idx, 16.0);\n  float y = floor(idx / 16.0);\n\n  vec2 ramp_pos = vec2(\n   (x + 0.5) / 16.0,\n   (y + 0.5) / 16.0\n  );\n\n  gl_FragColor = texture2D(u_color_ramp, ramp_pos);\n}\n';
 
 const quadVert =
   'precision mediump float;\n\nattribute vec2 a_pos;\n\nvarying vec2 v_tex_pos;\n\nvoid main() {\n    v_tex_pos = a_pos;\n    gl_Position = vec4(1.0 - 2.0 * a_pos, 0, 1);\n}\n';
@@ -243,7 +243,7 @@ class WindGL {
 
     this.colorRampTexture = createTexture(
       this.gl,
-      this.gl.LINEAR,
+      this.gl.NEAREST,
       rampData,
       16,
       16,
@@ -306,7 +306,6 @@ class WindGL {
   }
 
   setColorMode(poll) {
-    console.log('[WindGL] poll = ', poll);
     this.colorMode =
       poll !== 'WIND' && !!this.scalarData && !!this.scalarTexture ? 1 : 0;
   }

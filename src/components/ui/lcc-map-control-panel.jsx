@@ -170,10 +170,11 @@ const LccMapControlPanel = ({ datetime, segments, scaleMeta }) => {
           value={settings.bgPoll}
           onChange={e => updateSettings('bgPoll', e.target.value)}
         >
+          <option value="WIND">WIND</option>
+          <option value="TEMP">TEMP</option>
           <option value="O3">O3</option>
           <option value="PM10">PM10</option>
           <option value="PM2.5">PM2.5</option>
-          <option value="TEMP">TEMP</option>
         </select>
       </ControlRow>
       <ControlRow>
@@ -354,24 +355,6 @@ const LccMapControlPanel = ({ datetime, segments, scaleMeta }) => {
           />
           <span>바람장 WebGL</span>
         </label>
-
-        {layerVisible.webglWind && (
-          <div className="sub-container">
-            <SubRow>
-              <span className="label-text">색상 기준</span>
-              <select
-                value={settings.webglPoll}
-                onChange={e => updateSettings('webglPoll', e.target.value)}
-              >
-                <option value="WIND">풍속</option>
-                <option value="O3">O3</option>
-                <option value="PM10">PM10</option>
-                <option value="PM2.5">PM2.5</option>
-                <option value="TEMP">TEMP</option>
-              </select>
-            </SubRow>
-          </div>
-        )}
       </ControlGroup>
       <ControlGroup>
         <label className="main-label">

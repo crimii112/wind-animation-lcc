@@ -122,23 +122,13 @@ function Lcc({ mapId, SetMap }) {
   useEffect(() => {
     if (!map?.ol_uid) return;
     getEarthData();
-  }, [
-    map?.ol_uid,
-    settings.gridKm,
-    settings.layer,
-    settings.tstep,
-    settings.bgPoll,
-  ]);
-
-  useEffect(() => {
-    if (!map?.ol_uid) return;
     getWebGLData();
   }, [
     map?.ol_uid,
     settings.gridKm,
     settings.layer,
     settings.tstep,
-    settings.webglPoll,
+    settings.bgPoll,
   ]);
 
   // gridKm 변경 시 지도 뷰 재설정
@@ -347,7 +337,7 @@ function Lcc({ mapId, SetMap }) {
           gridKm: settings.gridKm,
           layer: settings.layer,
           tstep: settings.tstep,
-          poll: settings.webglPoll,
+          poll: settings.bgPoll,
         },
       );
 
@@ -612,6 +602,7 @@ const unitMap = {
   PM10: 'µg/m³',
   'PM2.5': 'µg/m³',
   TEMP: '℃',
+  WIND: 'm/s',
 };
 
 export default Lcc;

@@ -3,6 +3,53 @@
  * ============================== */
 
 export const RGBA_RANGES = {
+  WIND: [
+    { min: 0.0, max: 1.0, color: 'rgba(50, 136, 189, 1)' },
+    { min: 1.0, max: 2.0, color: 'rgba(86, 170, 178, 1)' },
+    { min: 2.0, max: 3.0, color: 'rgba(121, 200, 164, 1)' },
+    { min: 3.0, max: 4.0, color: 'rgba(171, 221, 164, 1)' },
+    { min: 4.0, max: 5.0, color: 'rgba(230, 245, 152, 1)' },
+    { min: 5.0, max: 6.0, color: 'rgba(254, 224, 139, 1)' },
+    { min: 6.0, max: 7.0, color: 'rgba(253, 174, 97, 1)' },
+    { min: 7.0, max: 8.0, color: 'rgba(244, 109, 67, 1)' },
+    { min: 8.0, max: 9.0, color: 'rgba(220, 80, 60, 1)' },
+    { min: 9.0, max: 10.0, color: 'rgba(213, 62, 79, 1)' },
+  ],
+  TEMP: [
+    // { min: -80.15, max: -67.15, color: 'rgba(37, 4, 42, 1)' },
+    // { min: -67.15, max: -54.15, color: 'rgba(41, 10, 130, 1)' },
+    // { min: -54.15, max: -40.0, color: 'rgba(81, 40, 40, 1)' },
+    // { min: -40.0, max: -17.78, color: 'rgba(192, 37, 149, 1)' },
+    // { min: -17.78, max: 0.0, color: 'rgba(70, 215, 215, 1)' },
+    // { min: 0.0, max: 2.0, color: 'rgba(21, 84, 187, 1)' },
+    // { min: 2.0, max: 17.85, color: 'rgba(24, 132, 14, 1)' },
+    // { min: 17.85, max: 24.85, color: 'rgba(247, 251, 59, 1)' },
+    // { min: 24.85, max: 37.85, color: 'rgba(235, 167, 21, 1)' },
+    // { min: 37.85, max: 54.85, color: 'rgba(230, 71, 39, 1)' },
+    // { min: 54.85, max: Infinity, color: 'rgba(88, 27, 67, 1)' },
+    { min: 0, max: 4, color: 'rgba(49, 0, 82, 1)' }, // 아주 진한 보라
+    { min: 4, max: 8, color: 'rgba(76, 0, 153, 1)' }, // 보라
+    { min: 8, max: 12, color: 'rgba(0, 0, 204, 1)' }, // 파랑
+    { min: 12, max: 16, color: 'rgba(0, 102, 204, 1)' }, // 파랑-청록
+    { min: 16, max: 20, color: 'rgba(0, 180, 180, 1)' }, // 청록 (중간)
+    { min: 20, max: 24, color: 'rgba(255, 200, 0, 1)' }, // 노랑 (확 튐)
+    { min: 24, max: 28, color: 'rgba(255, 140, 0, 1)' }, // 주황
+    { min: 28, max: 32, color: 'rgba(255, 80, 0, 1)' }, // 진한 주황
+    { min: 32, max: 36, color: 'rgba(220, 0, 0, 1)' }, // 빨강
+    { min: 36, max: 40, color: 'rgba(120, 0, 0, 1)' }, // 암적색
+    { min: 40, max: Infinity, color: 'rgba(50, 0, 0, 1)' },
+    // { min: -10, max: -6, color: 'rgba(49, 0, 82, 1)' }, // 아주 진한 보라
+    // { min: -6, max: -2, color: 'rgba(76, 0, 153, 1)' }, // 보라
+    // { min: -2, max: 2, color: 'rgba(0, 0, 204, 1)' }, // 파랑
+    // { min: 2, max: 6, color: 'rgba(0, 102, 204, 1)' }, // 파랑-청록
+    // { min: 6, max: 10, color: 'rgba(0, 180, 180, 1)' }, // 청록
+    // { min: 10, max: 14, color: 'rgba(255, 200, 0, 1)' }, // 노랑
+    // { min: 14, max: 18, color: 'rgba(255, 140, 0, 1)' }, // 주황
+    // { min: 18, max: 22, color: 'rgba(255, 80, 0, 1)' }, // 진한 주황
+    // { min: 22, max: 26, color: 'rgba(220, 0, 0, 1)' }, // 빨강
+    // { min: 26, max: 30, color: 'rgba(120, 0, 0, 1)' }, // 암적색
+    // { min: 30, max: Infinity, color: 'rgba(50, 0, 0, 1)' },
+  ],
   O3: [
     {
       min: 0.0,
@@ -309,19 +356,6 @@ export const RGBA_RANGES = {
       color: 'rgba(255, 0, 0, 1)',
     },
   ],
-  TEMP: [
-    { min: -80.15, max: -67.15, color: 'rgba(37, 4, 42, 1)' },
-    { min: -67.15, max: -54.15, color: 'rgba(41, 10, 130, 1)' },
-    { min: -54.15, max: -40.0, color: 'rgba(81, 40, 40, 1)' },
-    { min: -40.0, max: -17.78, color: 'rgba(192, 37, 149, 1)' },
-    { min: -17.78, max: 0.0, color: 'rgba(70, 215, 215, 1)' },
-    { min: 0.0, max: 2.0, color: 'rgba(21, 84, 187, 1)' },
-    { min: 2.0, max: 17.85, color: 'rgba(24, 132, 14, 1)' },
-    { min: 17.85, max: 24.85, color: 'rgba(247, 251, 59, 1)' },
-    { min: 24.85, max: 37.85, color: 'rgba(235, 167, 21, 1)' },
-    { min: 37.85, max: 54.85, color: 'rgba(230, 71, 39, 1)' },
-    { min: 54.85, max: Infinity, color: 'rgba(88, 27, 67, 1)' },
-  ],
 };
 
 /* ==============================
@@ -362,6 +396,7 @@ export function rgbsToEarthSegments(rgbs) {
  * ============================== */
 
 export const EARTH_SEGMENTS_MAP = {
+  WIND: rgbsToEarthSegments(RGBA_RANGES.WIND),
   TEMP: rgbsToEarthSegments(RGBA_RANGES.TEMP),
   O3: rgbsToEarthSegments(RGBA_RANGES.O3),
   PM10: rgbsToEarthSegments(RGBA_RANGES.PM10),
@@ -369,6 +404,11 @@ export const EARTH_SEGMENTS_MAP = {
 };
 
 export const EARTH_SCALE_META = {
+  WIND: {
+    unit: 'm/s',
+    format: v => v.toFixed(2),
+    labelFormat: v => v.toFixed(2),
+  },
   TEMP: {
     unit: '℃',
     format: v => v.toFixed(1),

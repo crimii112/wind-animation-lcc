@@ -7,8 +7,7 @@ export const LccProvider = ({ children }) => {
     gridKm: 9,
     layer: 0,
     tstep: 0,
-    bgPoll: 'O3',
-    webglPoll: 'WIND',
+    bgPoll: 'WIND',
     arrowGap: 3,
   });
 
@@ -24,12 +23,12 @@ export const LccProvider = ({ children }) => {
   });
 
   const [layerVisible, setLayerVisible] = useState({
-    sidoshp: false,
-    coords: false,
+    sidoshp: true,
+    coords: true,
     arrows: false,
     windAnimation: false,
     earthWind: false,
-    earthScalar: false,
+    earthScalar: true,
     webglWind: true,
     grid: false,
   });

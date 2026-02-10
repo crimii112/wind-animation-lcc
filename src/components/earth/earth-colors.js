@@ -15,6 +15,12 @@ export const RGBA_RANGES = {
     { min: 8.0, max: 9.0, color: 'rgba(220, 80, 60, 1)' },
     { min: 9.0, max: 10.0, color: 'rgba(213, 62, 79, 1)' },
   ],
+  CAI: [
+    { min: 0, max: 51, color: 'rgba(92, 140, 221, 1)' },
+    { min: 51, max: 101, color: 'rgba(101, 178, 75, 1)' },
+    { min: 101, max: 251, color: 'rgba(226, 208, 88, 1)' },
+    { min: 251, max: 500, color: 'rgba(236, 122, 122, 1)' },
+  ],
   TEMP: [
     // { min: -80.15, max: -67.15, color: 'rgba(37, 4, 42, 1)' },
     // { min: -67.15, max: -54.15, color: 'rgba(41, 10, 130, 1)' },
@@ -148,6 +154,312 @@ export const RGBA_RANGES = {
     },
     {
       min: 0.19,
+      max: Infinity,
+      color: 'rgba(255, 0, 0, 1)',
+    },
+  ],
+  SO2: [
+    {
+      min: 0.0,
+      max: 0.006,
+      color: 'rgba(135, 192, 232, 1)',
+    },
+    {
+      min: 0.006,
+      max: 0.013,
+      color: 'rgba(76, 162, 244, 1)',
+    },
+    {
+      min: 0.013,
+      max: 0.02,
+      color: 'rgba(53, 150, 249, 1)',
+    },
+    {
+      min: 0.02,
+      max: 0.025,
+      color: 'rgba(99, 254, 99, 1)',
+    },
+    {
+      min: 0.025,
+      max: 0.03,
+      color: 'rgba(0, 234, 0, 1)',
+    },
+    {
+      min: 0.03,
+      max: 0.035,
+      color: 'rgba(0, 216, 0, 1)',
+    },
+    {
+      min: 0.035,
+      max: 0.04,
+      color: 'rgba(0, 177, 0, 1)',
+    },
+    {
+      min: 0.04,
+      max: 0.045,
+      color: 'rgba(0, 138, 0, 1)',
+    },
+    {
+      min: 0.045,
+      max: 0.05,
+      color: 'rgba(0, 117, 0, 1)',
+    },
+    {
+      min: 0.05,
+      max: 0.067,
+      color: 'rgba(224, 224, 0, 1)',
+    },
+    {
+      min: 0.067,
+      max: 0.084,
+      color: 'rgba(193, 193, 0, 1)',
+    },
+    {
+      min: 0.084,
+      max: 0.101,
+      color: 'rgba(177, 177, 0, 1)',
+    },
+    {
+      min: 0.101,
+      max: 0.118,
+      color: 'rgba(146, 146, 0, 1)',
+    },
+    {
+      min: 0.118,
+      max: 0.134,
+      color: 'rgba(115, 115, 0, 1)',
+    },
+    {
+      min: 0.134,
+      max: 0.15,
+      color: 'rgba(100, 100, 0, 1)',
+    },
+    {
+      min: 0.15,
+      max: 0.16,
+      color: 'rgba(255, 150, 150, 1)',
+    },
+    {
+      min: 0.16,
+      max: 0.17,
+      color: 'rgba(255, 120, 120, 1)',
+    },
+    {
+      min: 0.17,
+      max: 0.18,
+      color: 'rgba(255, 90, 90, 1)',
+    },
+    {
+      min: 0.18,
+      max: 0.19,
+      color: 'rgba(255, 60, 60, 1)',
+    },
+    {
+      min: 0.19,
+      max: Infinity,
+      color: 'rgba(255, 0, 0, 1)',
+    },
+  ],
+  NO2: [
+    {
+      min: 0.0,
+      max: 0.01,
+      color: 'rgba(135, 192, 232, 1)',
+    },
+    {
+      min: 0.01,
+      max: 0.02,
+      color: 'rgba(76, 162, 244, 1)',
+    },
+    {
+      min: 0.02,
+      max: 0.03,
+      color: 'rgba(53, 150, 249, 1)',
+    },
+    {
+      min: 0.03,
+      max: 0.035,
+      color: 'rgba(99, 254, 99, 1)',
+    },
+    {
+      min: 0.035,
+      max: 0.04,
+      color: 'rgba(0, 234, 0, 1)',
+    },
+    {
+      min: 0.04,
+      max: 0.045,
+      color: 'rgba(0, 216, 0, 1)',
+    },
+    {
+      min: 0.045,
+      max: 0.05,
+      color: 'rgba(0, 177, 0, 1)',
+    },
+    {
+      min: 0.05,
+      max: 0.055,
+      color: 'rgba(0, 138, 0, 1)',
+    },
+    {
+      min: 0.055,
+      max: 0.06,
+      color: 'rgba(0, 117, 0, 1)',
+    },
+    {
+      min: 0.06,
+      max: 0.08,
+      color: 'rgba(224, 224, 0, 1)',
+    },
+    {
+      min: 0.08,
+      max: 0.1,
+      color: 'rgba(193, 193, 0, 1)',
+    },
+    {
+      min: 0.1,
+      max: 0.12,
+      color: 'rgba(177, 177, 0, 1)',
+    },
+    {
+      min: 0.12,
+      max: 0.14,
+      color: 'rgba(146, 146, 0, 1)',
+    },
+    {
+      min: 0.14,
+      max: 0.17,
+      color: 'rgba(115, 115, 0, 1)',
+    },
+    {
+      min: 0.17,
+      max: 0.2,
+      color: 'rgba(100, 100, 0, 1)',
+    },
+    {
+      min: 0.2,
+      max: 0.21,
+      color: 'rgba(255, 150, 150, 1)',
+    },
+    {
+      min: 0.21,
+      max: 0.22,
+      color: 'rgba(255, 120, 120, 1)',
+    },
+    {
+      min: 0.22,
+      max: 0.23,
+      color: 'rgba(255, 90, 90, 1)',
+    },
+    {
+      min: 0.23,
+      max: 0.24,
+      color: 'rgba(255, 60, 60, 1)',
+    },
+    {
+      min: 0.24,
+      max: Infinity,
+      color: 'rgba(255, 0, 0, 1)',
+    },
+  ],
+  CO: [
+    {
+      min: 0.0,
+      max: 0.6,
+      color: 'rgba(135, 192, 232, 1)',
+    },
+    {
+      min: 0.6,
+      max: 1.3,
+      color: 'rgba(76, 162, 244, 1)',
+    },
+    {
+      min: 1.3,
+      max: 2.0,
+      color: 'rgba(53, 150, 249, 1)',
+    },
+    {
+      min: 2.0,
+      max: 3.1,
+      color: 'rgba(99, 254, 99, 1)',
+    },
+    {
+      min: 3.1,
+      max: 4.2,
+      color: 'rgba(0, 234, 0, 1)',
+    },
+    {
+      min: 4.2,
+      max: 5.4,
+      color: 'rgba(0, 216, 0, 1)',
+    },
+    {
+      min: 5.4,
+      max: 6.6,
+      color: 'rgba(0, 177, 0, 1)',
+    },
+    {
+      min: 6.6,
+      max: 7.8,
+      color: 'rgba(0, 138, 0, 1)',
+    },
+    {
+      min: 7.8,
+      max: 9,
+      color: 'rgba(0, 117, 0, 1)',
+    },
+    {
+      min: 9,
+      max: 10,
+      color: 'rgba(224, 224, 0, 1)',
+    },
+    {
+      min: 10,
+      max: 11,
+      color: 'rgba(193, 193, 0, 1)',
+    },
+    {
+      min: 11,
+      max: 12,
+      color: 'rgba(177, 177, 0, 1)',
+    },
+    {
+      min: 12,
+      max: 13,
+      color: 'rgba(146, 146, 0, 1)',
+    },
+    {
+      min: 13,
+      max: 14,
+      color: 'rgba(115, 115, 0, 1)',
+    },
+    {
+      min: 14,
+      max: 15,
+      color: 'rgba(100, 100, 0, 1)',
+    },
+    {
+      min: 15,
+      max: 16,
+      color: 'rgba(255, 150, 150, 1)',
+    },
+    {
+      min: 16,
+      max: 17,
+      color: 'rgba(255, 120, 120, 1)',
+    },
+    {
+      min: 17,
+      max: 18,
+      color: 'rgba(255, 90, 90, 1)',
+    },
+    {
+      min: 18,
+      max: 19,
+      color: 'rgba(255, 60, 60, 1)',
+    },
+    {
+      min: 19,
       max: Infinity,
       color: 'rgba(255, 0, 0, 1)',
     },
@@ -397,8 +709,12 @@ export function rgbsToEarthSegments(rgbs) {
 
 export const EARTH_SEGMENTS_MAP = {
   WIND: rgbsToEarthSegments(RGBA_RANGES.WIND),
+  CAI: rgbsToEarthSegments(RGBA_RANGES.CAI),
   TEMP: rgbsToEarthSegments(RGBA_RANGES.TEMP),
   O3: rgbsToEarthSegments(RGBA_RANGES.O3),
+  SO2: rgbsToEarthSegments(RGBA_RANGES.SO2),
+  NO2: rgbsToEarthSegments(RGBA_RANGES.NO2),
+  CO: rgbsToEarthSegments(RGBA_RANGES.CO),
   PM10: rgbsToEarthSegments(RGBA_RANGES.PM10),
   'PM2.5': rgbsToEarthSegments(RGBA_RANGES['PM2.5']),
 };
@@ -409,6 +725,11 @@ export const EARTH_SCALE_META = {
     format: v => v.toFixed(2),
     labelFormat: v => v.toFixed(2),
   },
+  CAI: {
+    unit: '',
+    format: v => v.toFixed(0),
+    labelFormat: v => v.toFixed(0),
+  },
   TEMP: {
     unit: '℃',
     format: v => v.toFixed(1),
@@ -418,6 +739,21 @@ export const EARTH_SCALE_META = {
     unit: 'ppm',
     format: v => v.toFixed(3),
     labelFormat: v => v.toFixed(3),
+  },
+  SO2: {
+    unit: 'ppm',
+    format: v => v.toFixed(4),
+    labelFormat: v => v.toFixed(4),
+  },
+  NO2: {
+    unit: 'ppm',
+    format: v => v.toFixed(4),
+    labelFormat: v => v.toFixed(4),
+  },
+  CO: {
+    unit: 'ppm',
+    format: v => v.toFixed(2),
+    labelFormat: v => v.toFixed(2),
   },
   PM10: {
     unit: 'µg/m³',

@@ -8,9 +8,14 @@ export class WebGLWindOLAnimator {
     this.canvas = document.createElement('canvas');
     this.canvas.style.position = 'absolute';
     this.canvas.style.pointerEvents = 'none';
-    this.canvas.style.zIndex = 100;
+    // this.canvas.style.zIndex = 100;
 
-    map.getViewport().appendChild(this.canvas);
+    // map.getViewport().appendChild(this.canvas);
+    const viewport = map.getViewport();
+    const overlayContainer = viewport.querySelector(
+      '.ol-overlaycontainer-stopevent',
+    );
+    viewport.insertBefore(this.canvas, overlayContainer);
 
     const gl = this.canvas.getContext('webgl', { antialias: false });
     this.wind = new WindGL(gl);

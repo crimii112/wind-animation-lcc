@@ -9,11 +9,12 @@ export const LccProvider = ({ children }) => {
     tstep: 0,
     bgPoll: 'WIND',
     arrowGap: 3,
+    polygonMode: 'multi',
   });
 
   const [style, setStyle] = useState({
-    coordsOpacity: 0.3,
-    arrowsOpacity: 1.0,
+    concPolygonOpacity: 0.3,
+    windArrowsOpacity: 1.0,
     earthScalarOpacity: 0.5,
     sidoshpOpacity: 1.0,
     arrowColor: '#FFFF00',
@@ -24,8 +25,8 @@ export const LccProvider = ({ children }) => {
 
   const [layerVisible, setLayerVisible] = useState({
     sidoshp: true,
-    coords: true,
-    arrows: false,
+    concPolygon: true,
+    windArrows: false,
     windAnimation: false,
     earthWind: false,
     earthScalar: true,

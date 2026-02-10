@@ -28,16 +28,17 @@ const LccLegend = ({
       {pollLegendOn && (
         <LegendSection>
           <LegendTitle>
-            {title}({unit})
+            {title}
+            {unit ? `(${unit})` : ''}
           </LegendTitle>
           <ColorList>
             {rgbs.toReversed().map(item => (
               <ColorRow key={item.min}>
                 <ColorBox style={{ backgroundColor: item.color }} />
                 <ValueText>
-                  {title === 'O3'
+                  {title === 'O3' || title === 'NO2' || title === 'SO2'
                     ? item.min.toFixed(3)
-                    : title === 'WIND'
+                    : title === 'CO' || title === '풍속'
                       ? item.min.toFixed(1)
                       : item.min}
                 </ValueText>
@@ -88,7 +89,7 @@ const ArrowImg = ({ ws }) => {
     canvas.height = size * pr;
     canvas.style.width = `${size}px`;
     canvas.style.height = `${size}px`;
-    canvas.style.marginRight = `10px`;
+    canvas.style.display = 'block';
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
@@ -125,10 +126,12 @@ const ArrowImg = ({ ws }) => {
       size: [canvas.width, canvas.height],
       pixelRatio: pr,
     });
+    const cx = shaft.getRadius() + 2;
+    const cy = canvas.height / 2 - 4;
     vc.setStyle(new Style({ image: shaft }));
-    vc.drawGeometry(new Point([canvas.width / 2, canvas.height / 2]));
+    vc.drawGeometry(new Point([cx, cy]));
     vc.setStyle(new Style({ image: head }));
-    vc.drawGeometry(new Point([canvas.width / 2, canvas.height / 2]));
+    vc.drawGeometry(new Point([cx, cy]));
   }, []);
 
   return <canvas ref={arrowImgRef} />;

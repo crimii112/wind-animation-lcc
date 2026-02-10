@@ -25,34 +25,59 @@ const MapProvider = ({ id, defaultMode = 'Base', children }) => {
 
   useEffect(() => {
     const center = [131338, -219484]; //lcc.jsx에서 사용
+    const VWORLD_MIN_ZOOM = 7.5;
+
+    const osmLayer = new Tile({
+      name: 'OSM',
+      source: new OSM({
+        tilePixelRatio: 5,
+      }),
+    });
+
+    const vworldBaseLayer = new Tile({
+      name: 'Base',
+      visible: false,
+      source: new XYZ({
+        url: `http://api.vworld.kr/req/wmts/1.0.0/${
+          import.meta.env.VITE_APP_VWORLD_API_KEY
+        }/Base/{z}/{y}/{x}.png`,
+      }),
+    });
+
+    const view = new View({
+      projection: 'LCC',
+      center: center,
+      // projection: 'EPSG:4326',
+      // center: transform(center, 'LCC', 'EPSG:4326'),
+      zoom: 7.5,
+      maxZoom: 13,
+      minZoom: 2,
+      units: 'm',
+    });
 
     const map = new OlMap({
       controls: defaultControls({ zoom: false, rotate: false }),
       interactions: defaultInteractions().extend([new DblClickDragZoom()]),
-      layers: [
-        new Tile({
-          name: 'OSM',
-          source: new OSM({
-            tilePixelRatio: 5,
-          }),
-        }),
-      ],
-      view: new View({
-        projection: 'LCC',
-        center: center,
-        // projection: 'EPSG:4326',
-        // center: transform(center, 'LCC', 'EPSG:4326'),
-        zoom: 7.5,
-        maxZoom: 13,
-        minZoom: 2,
-        units: 'm',
-      }),
+      layers: [osmLayer, vworldBaseLayer],
+      view,
       target: id,
     });
 
+    const updateVWorldVisibility = () => {
+      const z = view.getZoom();
+      const shouldShow = typeof z === 'number' && z >= VWORLD_MIN_ZOOM;
+      vworldBaseLayer.setVisible(shouldShow);
+    };
+
+    updateVWorldVisibility();
+    const key = view.on('change:resolution', updateVWorldVisibility);
+
     setMapObj(map);
 
-    return () => map.setTarget(undefined);
+    return () => {
+      view.un('change:resolution', updateVWorldVisibility);
+      map.setTarget(undefined);
+    };
   }, [id]);
 
   return (

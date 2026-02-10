@@ -1,7 +1,7 @@
 import VectorLayer from 'ol/layer/Vector';
 import VectorSource from 'ol/source/Vector';
 import { Fill, RegularShape, Stroke, Style } from 'ol/style';
-import { MultiPoint, MultiPolygon, Point } from 'ol/geom';
+import { MultiPoint, MultiPolygon, Point, Polygon } from 'ol/geom';
 import { Feature } from 'ol';
 import { transform } from 'ol/proj';
 import ImageLayer from 'ol/layer/Image';
@@ -17,23 +17,23 @@ export function createLccLayers() {
   });
 
   // 모델링 농도장(polygon)
-  const sourceCoords = new VectorSource({ wrapX: false });
-  const layerCoords = new VectorLayer({
-    source: sourceCoords,
-    id: 'coords',
+  const sourceConcPolygon = new VectorSource({ wrapX: false });
+  const layerConcPolygon = new VectorLayer({
+    source: sourceConcPolygon,
+    id: 'concPolygon',
     opacity: 0.3,
   });
 
   // 바람장 화살표(Point)
-  const sourceArrows = new VectorSource({ wrapX: false });
-  const layerArrows = new VectorLayer({
-    source: sourceArrows,
-    id: 'arrows',
+  const sourceWindArrows = new VectorSource({ wrapX: false });
+  const layerWindArrows = new VectorLayer({
+    source: sourceWindArrows,
+    id: 'windArrows',
   });
 
   // 바람장 애니메이션
-  const layerWindCanvas = new VectorLayer({
-    id: 'windCanvas',
+  const layerWindAnimation = new VectorLayer({
+    id: 'windAnimation',
     source: new VectorSource(),
     style: null,
     updateWhileAnimating: true,
@@ -67,11 +67,11 @@ export function createLccLayers() {
   return {
     sourceSidoShp,
     layerSidoShp,
-    sourceCoords,
-    layerCoords,
-    sourceArrows,
-    layerArrows,
-    layerWindCanvas,
+    sourceConcPolygon,
+    layerConcPolygon,
+    sourceWindArrows,
+    layerWindArrows,
+    layerWindAnimation,
     layerEarthWindCanvas,
     layerEarthScalarCanvas,
     sourceGrid,
@@ -79,59 +79,45 @@ export function createLccLayers() {
   };
 }
 
-/* 모델링 농도 히트맵 feature 생성 - data 전체 polygon 생성 (미사용) */
-// bgPoll 변경 시 기존 스타일 캐시 초기화
-// useEffect(() => {
-//   polygonStyleCache.current = {};
-// }, [settings.bgPoll]);
+/* 모델링 농도 히트맵 feature 생성 - data 전체 polygon 생성 */
+export function createPolygonFeaturesSingle(data, settings, halfCell, rgbs) {
+  const colorRange = rgbs[settings.bgPoll];
 
-// const polygonStyleCache = useRef({});
-// const getPolygonStyle = value => {
-//   const key = `${settings.bgPoll}-${value}`;
-//   if (polygonStyleCache.current[key]) {
-//     return polygonStyleCache.current[key];
-//   }
+  return data
+    .map(item => {
+      const color = colorRange.find(
+        s => item.value >= s.min && item.value < s.max,
+      )?.color;
 
-//   const color = rgbs[settings.bgPoll].find(
-//     s => value >= s.min && value < s.max
-//   )?.color;
+      if (!color) return null;
 
-//   if (!color) return null;
+      const f = new Feature({
+        geometry: new Polygon([
+          [
+            [item.lon - halfCell, item.lat + halfCell],
+            [item.lon - halfCell, item.lat - halfCell],
+            [item.lon + halfCell, item.lat - halfCell],
+            [item.lon + halfCell, item.lat + halfCell],
+            [item.lon - halfCell, item.lat + halfCell],
+          ],
+        ]),
+      });
 
-//   const style = new Style({
-//     fill: new Fill({
-//       color: color.replace(
-//         /rgba\(([^,]+), ([^,]+), ([^,]+), ([^)]+)\)/,
-//         (_, r, g, b) => `rgba(${r}, ${g}, ${b}, 1)`
-//       ),
-//     }),
-//   });
+      f.set('overlay', item.overlay);
 
-//   polygonStyleCache.current[key] = style;
-//   return style;
-// };
+      f.setStyle(
+        new Style({
+          fill: new Fill({ color }),
+        }),
+      );
 
-// const createPolygonFeatures = data =>
-//   data.map(item => {
-//     const f = new Feature({
-//       geometry: new Polygon([
-//         [
-//           [item.lon - halfCell, item.lat + halfCell],
-//           [item.lon - halfCell, item.lat - halfCell],
-//           [item.lon + halfCell, item.lat - halfCell],
-//           [item.lon + halfCell, item.lat + halfCell],
-//           [item.lon - halfCell, item.lat + halfCell],
-//         ],
-//       ]),
-//       value: item.value,
-//     });
-
-//     f.setStyle(getPolygonStyle(item.value));
-//     return f;
-//   });
+      return f;
+    })
+    .filter(Boolean);
+}
 
 /** 모델링 농도 히트맵 feature 생성 - legend 기준 multipolygon 생성 */
-export function createPolygonFeatures(data, settings, halfCell, rgbs) {
+export function createPolygonFeaturesMulti(data, settings, halfCell, rgbs) {
   const colorRange = rgbs[settings.bgPoll];
   const groupedCoordinates = {};
 
@@ -175,6 +161,12 @@ export function createPolygonFeatures(data, settings, halfCell, rgbs) {
 
     return f;
   });
+}
+
+export function createPolygonFeatures(data, settings, halfCell, rgbs) {
+  if (settings.polygonMode === 'single')
+    return createPolygonFeaturesSingle(data, settings, halfCell, rgbs);
+  return createPolygonFeaturesMulti(data, settings, halfCell, rgbs);
 }
 
 /** 바람 화살표 Feature 생성 */

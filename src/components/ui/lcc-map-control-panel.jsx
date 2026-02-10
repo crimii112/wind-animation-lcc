@@ -170,9 +170,13 @@ const LccMapControlPanel = ({ datetime, segments, scaleMeta }) => {
           value={settings.bgPoll}
           onChange={e => updateSettings('bgPoll', e.target.value)}
         >
-          <option value="WIND">WIND</option>
-          <option value="TEMP">TEMP</option>
+          <option value="WIND">풍속</option>
+          <option value="TEMP">온도</option>
+          <option value="CAI">CAI</option>
           <option value="O3">O3</option>
+          <option value="SO2">SO2</option>
+          <option value="NO2">NO2</option>
+          <option value="CO">CO</option>
           <option value="PM10">PM10</option>
           <option value="PM2.5">PM2.5</option>
         </select>
@@ -197,14 +201,24 @@ const LccMapControlPanel = ({ datetime, segments, scaleMeta }) => {
         <label className="main-label">
           <input
             type="checkbox"
-            checked={layerVisible.coords}
-            onChange={e => toggleLayer('coords', e.target.checked)}
+            checked={layerVisible.concPolygon}
+            onChange={e => toggleLayer('concPolygon', e.target.checked)}
           />
           <span>모델링 농도장</span>
         </label>
 
-        {layerVisible.coords && (
+        {layerVisible.concPolygon && (
           <div className="sub-container">
+            <SubRow>
+              <span className="label-text">폴리곤 방식</span>
+              <select
+                value={settings.polygonMode}
+                onChange={e => updateSettings('polygonMode', e.target.value)}
+              >
+                <option value="multi">멀티 폴리곤</option>
+                <option value="single">단일 폴리곤(오버레이)</option>
+              </select>
+            </SubRow>
             <SubRow>
               <span className="label-text">투명도</span>
               <input
@@ -212,13 +226,13 @@ const LccMapControlPanel = ({ datetime, segments, scaleMeta }) => {
                 min="0"
                 max="1"
                 step="0.1"
-                value={style.coordsOpacity}
+                value={style.concPolygonOpacity}
                 onChange={e =>
-                  updateStyle('coordsOpacity', Number(e.target.value))
+                  updateStyle('concPolygonOpacity', Number(e.target.value))
                 }
               />
               <span className="value-text">
-                {Math.round(style.coordsOpacity * 100)}%
+                {Math.round(style.concPolygonOpacity * 100)}%
               </span>
             </SubRow>
           </div>
@@ -228,12 +242,12 @@ const LccMapControlPanel = ({ datetime, segments, scaleMeta }) => {
         <label className="main-label">
           <input
             type="checkbox"
-            checked={layerVisible.arrows}
-            onChange={e => toggleLayer('arrows', e.target.checked)}
+            checked={layerVisible.windArrows}
+            onChange={e => toggleLayer('windArrows', e.target.checked)}
           />
           <span>바람장 화살표</span>
         </label>
-        {layerVisible.arrows && (
+        {layerVisible.windArrows && (
           <div className="sub-container">
             <SubRow>
               <span className="label-text">투명도</span>
@@ -242,13 +256,13 @@ const LccMapControlPanel = ({ datetime, segments, scaleMeta }) => {
                 min="0"
                 max="1"
                 step="0.1"
-                value={style.arrowsOpacity}
+                value={style.windArrowsOpacity}
                 onChange={e =>
-                  updateStyle('arrowsOpacity', Number(e.target.value))
+                  updateStyle('windArrowsOpacity', Number(e.target.value))
                 }
               />
               <span className="value-text">
-                {Math.round(style.arrowsOpacity * 100)}%
+                {Math.round(style.windArrowsOpacity * 100)}%
               </span>
             </SubRow>
             <SubRow>
@@ -627,10 +641,24 @@ const SubRow = styled.div`
   align-items: center;
   gap: 10px;
   font-size: 12px;
-  color: #777;
+  color: #555;
 
   .label-text {
-    min-width: 35px;
+    min-width: 50px;
+    color: #444;
+    font-weight: 500;
+  }
+
+  select {
+    min-width: 110px;
+    padding: 4px 22px 4px 8px;
+    font-size: 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background: #fff
+      url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23666' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E")
+      no-repeat right 6px center;
+    appearance: none;
   }
 
   input[type='range'] {

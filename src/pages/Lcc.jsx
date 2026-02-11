@@ -97,14 +97,16 @@ function Lcc({ mapId, SetMap }) {
     el.className = 'ol-tooltip';
 
     el.style.padding = '6px 8px';
-    el.style.background = 'rgba(0,0,0,0.75)';
-    el.style.color = '#fff';
+    el.style.background = 'rgba(255,255,255,0.95)';
+    el.style.color = '#000';
     el.style.borderRadius = '6px';
-    el.style.fontSize = '12px';
+    el.style.fontSize = '13px';
     el.style.fontWeight = '600';
     el.style.whiteSpace = 'pre-line';
     el.style.pointerEvents = 'none';
     el.style.position = 'relative';
+    el.style.boxShadow = '0 2px 6px rgba(0,0,0,0.25)';
+    el.style.border = '1px solid #ccc';
 
     polygonOverlayElRef.current = el;
     const overlay = new Overlay({
@@ -722,6 +724,6 @@ const MapDiv = styled.div`
 
     border-left: 6px solid transparent;
     border-right: 6px solid transparent;
-    border-top: 6px solid rgba(0, 0, 0, 0.75);
+    border-top: 6px solid rgba(255, 255, 255, 0.95);
   }
 `;

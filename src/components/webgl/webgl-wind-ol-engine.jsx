@@ -40,54 +40,58 @@ export class WebGLWindOLAnimator {
   _bind() {
     this._onMoveStart = () => {
       this._running = false;
+
+      if (this._rafId) {
+        cancelAnimationFrame(this._rafId);
+        this._rafId = null;
+      }
+
       this.canvas.style.display = 'none';
     };
 
     this._onMoveEnd = () => {
       this.updateCanvas();
       this.canvas.style.display = 'block';
+
       this._running = true;
-      this._loop();
+      this._rafId = requestAnimationFrame(this._loop);
     };
 
     this.map.on('movestart', this._onMoveStart);
     this.map.on('moveend', this._onMoveEnd);
 
     this.updateCanvas();
-    this._loop();
+    this._rafId = requestAnimationFrame(this._loop);
   }
 
   _loop = () => {
     if (!this._running) return;
+
     this.wind.draw();
     this._rafId = requestAnimationFrame(this._loop);
   };
 
   updateCanvas() {
     const view = this.map.getView();
-    const mapExtent = view.calculateExtent(this.map.getSize());
+    const size = this.map.getSize();
+    if (!size) return;
+
+    this.canvas.width = size[0];
+    this.canvas.height = size[1];
+    this.canvas.style.left = '0px';
+    this.canvas.style.top = '0px';
+
     const extentLCC = this.extentLCC;
+    const minPx = this.map.getPixelFromCoordinate([extentLCC[0], extentLCC[3]]);
+    const maxPx = this.map.getPixelFromCoordinate([extentLCC[2], extentLCC[1]]);
 
-    const minX = Math.max(mapExtent[0], extentLCC[0]);
-    const minY = Math.max(mapExtent[1], extentLCC[1]);
-    const maxX = Math.min(mapExtent[2], extentLCC[2]);
-    const maxY = Math.min(mapExtent[3], extentLCC[3]);
+    const left = minPx[0];
+    const top = minPx[1];
+    const width = maxPx[0] - minPx[0];
+    const height = maxPx[1] - minPx[1];
 
-    if (minX >= maxX || minY >= maxY) {
-      this.canvas.style.display = 'none';
-      return;
-    }
-
-    // this.canvas.style.display = 'block';
-
-    const bottomLeftPx = this.map.getPixelFromCoordinate([minX, minY]);
-    const topRightPx = this.map.getPixelFromCoordinate([maxX, maxY]);
-
-    const width = topRightPx[0] - bottomLeftPx[0];
-    const height = bottomLeftPx[1] - topRightPx[1];
-
-    this.canvas.style.left = `${bottomLeftPx[0]}px`;
-    this.canvas.style.top = `${topRightPx[1]}px`;
+    this.canvas.style.left = `${left}px`;
+    this.canvas.style.top = `${top}px`;
     this.canvas.width = Math.max(1, width);
     this.canvas.height = Math.max(1, height);
 
@@ -97,7 +101,10 @@ export class WebGLWindOLAnimator {
   destroy() {
     this._running = false;
 
-    if (this._rafId) cancelAnimationFrame(this._rafId);
+    if (this._rafId) {
+      cancelAnimationFrame(this._rafId);
+      this._rafId = null;
+    }
 
     this.map.un('movestart', this._onMoveStart);
     this.map.un('moveend', this._onMoveEnd);

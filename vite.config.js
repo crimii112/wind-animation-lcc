@@ -6,6 +6,7 @@ import rollupPluginObfuscator from 'rollup-plugin-obfuscator';
 // https://vite.dev/config/
 const env = loadEnv(process.env.NODE_ENV, process.cwd());
 export default defineConfig({
+  base: '/wal/',
   plugins: [
     react(),
     tailwindcss(),
@@ -26,13 +27,6 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 5000,
     open: true,
-    proxy: {
-      '/img': {
-        target: env.VITE_IMAGE_API_URL,
-        changeOrigin: true,
-        rewrite: path => path.replace(/^\/img/, ''),
-      },
-    },
   },
   build: {
     sourcemap: false,

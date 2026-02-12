@@ -38,7 +38,7 @@ const MapProvider = ({ id, defaultMode = 'Base', children }) => {
       name: 'Base',
       visible: false,
       source: new XYZ({
-        url: `http://api.vworld.kr/req/wmts/1.0.0/${
+        url: `https://api.vworld.kr/req/wmts/1.0.0/${
           import.meta.env.VITE_APP_VWORLD_API_KEY
         }/Base/{z}/{y}/{x}.png`,
       }),

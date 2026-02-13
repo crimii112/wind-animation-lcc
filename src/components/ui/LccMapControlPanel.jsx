@@ -349,10 +349,20 @@ const LccMapControlPanel = ({ datetime, segments, scaleMeta }) => {
       />
 
       <LayerToggle
-        label="시도 경계"
-        checked={layerVisible.sidoshp}
-        onChange={v => toggleLayer('sidoshp', v)}
+        label="행정 경계"
+        checked={layerVisible.shp}
+        onChange={v => toggleLayer('shp', v)}
       >
+        <SubRow>
+          <span className="label-text">범위</span>
+          <select
+            value={settings.boundaryType}
+            onChange={e => updateSettings('boundaryType', e.target.value)}
+          >
+            <option value="sido">시도</option>
+            <option value="world">국가</option>
+          </select>
+        </SubRow>
         <SubRow>
           <span className="label-text">투명도</span>
           <input
@@ -360,23 +370,21 @@ const LccMapControlPanel = ({ datetime, segments, scaleMeta }) => {
             min="0"
             max="1"
             step="0.1"
-            value={style.sidoshpOpacity}
-            onChange={e =>
-              updateStyle('sidoshpOpacity', Number(e.target.value))
-            }
+            value={style.shpOpacity}
+            onChange={e => updateStyle('shpOpacity', Number(e.target.value))}
           />
           <span className="value-text">
-            {Math.round(style.sidoshpOpacity * 100)}%
+            {Math.round(style.shpOpacity * 100)}%
           </span>
         </SubRow>
         <SubRow>
           <span className="label-text">색상</span>
           <ColorPicker>
-            <div style={{ backgroundColor: style.sidoshpColor }} />
+            <div style={{ backgroundColor: style.shpColor }} />
             <input
               type="color"
-              value={style.sidoshpColor}
-              onChange={e => updateStyle('sidoshpColor', e.target.value)}
+              value={style.shpColor}
+              onChange={e => updateStyle('shpColor', e.target.value)}
             />
           </ColorPicker>
         </SubRow>

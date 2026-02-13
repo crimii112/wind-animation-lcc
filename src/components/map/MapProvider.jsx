@@ -47,7 +47,7 @@ const MapProvider = ({ id, children }) => {
       center: center,
       zoom: 7.5,
       maxZoom: 13,
-      minZoom: 2,
+      minZoom: 5,
       units: 'm',
     });
 

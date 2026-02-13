@@ -13,6 +13,14 @@ export function createLccLayers() {
     opacity: 0.5,
   });
 
+  // 전세계 경계(shp)
+  const sourceWorldShp = new VectorSource({ wrapX: false });
+  const layerWorldShp = new VectorLayer({
+    source: sourceWorldShp,
+    id: 'worldshp',
+    opacity: 0.5,
+  });
+
   // 모델링 농도장(polygon)
   const sourceConcPolygon = new VectorSource({ wrapX: false });
   const layerConcPolygon = new VectorLayer({
@@ -62,6 +70,8 @@ export function createLccLayers() {
   });
 
   return {
+    sourceWorldShp,
+    layerWorldShp,
     sourceSidoShp,
     layerSidoShp,
     sourceConcPolygon,

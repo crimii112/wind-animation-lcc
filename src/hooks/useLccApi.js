@@ -4,8 +4,8 @@ import { useCallback } from 'react';
 export function useLccApi(settings) {
   const baseUrl = import.meta.env.VITE_WIND_API_URL;
 
-  const fetchSidoShp = useCallback(async () => {
-    const { data } = await axios.post(`${baseUrl}/api/marker/sidoshp`);
+  const fetchShp = useCallback(async () => {
+    const { data } = await axios.post(`${baseUrl}/api/marker/shp`);
     return data;
   }, [baseUrl]);
 
@@ -60,7 +60,7 @@ export function useLccApi(settings) {
   ]);
 
   return {
-    fetchSidoShp,
+    fetchShp,
     fetchLccData,
     fetchEarthData,
     fetchWebGLData,

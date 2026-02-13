@@ -10,21 +10,22 @@ export const LccProvider = ({ children }) => {
     bgPoll: 'WIND',
     arrowGap: 3,
     polygonMode: 'single',
+    boundaryType: 'sido',
   });
 
   const [style, setStyle] = useState({
     concPolygonOpacity: 0.5,
     windArrowsOpacity: 1.0,
     earthScalarOpacity: 0.5,
-    sidoshpOpacity: 1.0,
+    shpOpacity: 1.0,
     arrowColor: '#FFFF00',
     windColor: '#1480FE',
     earthWindColor: '#ffffff',
-    sidoshpColor: '#000000',
+    shpColor: '#000000',
   });
 
   const [layerVisible, setLayerVisible] = useState({
-    sidoshp: true,
+    shp: true,
     concPolygon: true,
     windArrows: false,
     windAnimation: false,

@@ -1,6 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Map as OlMap, View } from 'ol';
-import { fromLonLat, get, transform } from 'ol/proj';
 import proj4 from 'proj4';
 import { register } from 'ol/proj/proj4';
 import { defaults as defaultControls } from 'ol/control';
@@ -10,11 +9,10 @@ import {
 } from 'ol/interaction';
 import { Tile } from 'ol/layer';
 import { OSM, XYZ } from 'ol/source';
-import Button from 'ol-ext/control/Button';
 import styled from 'styled-components';
 import MapContext from './MapContext';
 
-const MapProvider = ({ id, defaultMode = 'Base', children }) => {
+const MapProvider = ({ id, children }) => {
   const [mapObj, setMapObj] = useState({});
 
   proj4.defs(
@@ -24,7 +22,7 @@ const MapProvider = ({ id, defaultMode = 'Base', children }) => {
   register(proj4);
 
   useEffect(() => {
-    const center = [131338, -219484]; //lcc.jsx에서 사용
+    const center = [131338, -219484];
     const VWORLD_MIN_ZOOM = 7.5;
 
     const osmLayer = new Tile({
@@ -47,8 +45,6 @@ const MapProvider = ({ id, defaultMode = 'Base', children }) => {
     const view = new View({
       projection: 'LCC',
       center: center,
-      // projection: 'EPSG:4326',
-      // center: transform(center, 'LCC', 'EPSG:4326'),
       zoom: 7.5,
       maxZoom: 13,
       minZoom: 2,

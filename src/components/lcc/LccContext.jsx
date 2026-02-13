@@ -9,11 +9,11 @@ export const LccProvider = ({ children }) => {
     tstep: 0,
     bgPoll: 'WIND',
     arrowGap: 3,
-    polygonMode: 'multi',
+    polygonMode: 'single',
   });
 
   const [style, setStyle] = useState({
-    concPolygonOpacity: 0.3,
+    concPolygonOpacity: 0.5,
     windArrowsOpacity: 1.0,
     earthScalarOpacity: 0.5,
     sidoshpOpacity: 1.0,
@@ -28,9 +28,9 @@ export const LccProvider = ({ children }) => {
     concPolygon: true,
     windArrows: false,
     windAnimation: false,
-    earthWind: false,
-    earthScalar: true,
-    webglWind: true,
+    earthWind: true,
+    earthScalar: false,
+    webglWind: false,
     grid: false,
   });
 

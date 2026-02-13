@@ -6,7 +6,7 @@ import { LccProvider } from '@/components/lcc/LccContext';
 
 function App() {
   return (
-    <BrowserRouter basename="/wal">
+    <BrowserRouter basename={import.meta.env.PROD ? '/wal' : undefined}>
       <div className="">
         <Routes>
           <Route

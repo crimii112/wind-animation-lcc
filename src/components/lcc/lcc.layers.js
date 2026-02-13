@@ -3,9 +3,6 @@ import VectorSource from 'ol/source/Vector';
 import { Fill, RegularShape, Stroke, Style } from 'ol/style';
 import { MultiPoint, MultiPolygon, Point, Polygon } from 'ol/geom';
 import { Feature } from 'ol';
-import { transform } from 'ol/proj';
-import ImageLayer from 'ol/layer/Image';
-import ImageCanvasSource from 'ol/source/ImageCanvas';
 
 export function createLccLayers() {
   // 시도 경계(shp)
@@ -139,11 +136,7 @@ export function createPolygonFeaturesMulti(data, settings, halfCell, rgbs) {
       ],
     ];
 
-    const transformedCoords = coordsLcc[0].map(c =>
-      transform(c, 'LCC', 'EPSG:4326'),
-    );
-    groupedCoordinates[colorIndex].push(coordsLcc); // lcc 기준
-    // groupedCoordinates[colorIndex].push([transformedCoords]);
+    groupedCoordinates[colorIndex].push(coordsLcc);
   });
 
   return Object.keys(groupedCoordinates).map(index => {
@@ -174,10 +167,7 @@ export function createArrowFeatures(data) {
   return data.map(
     item =>
       new Feature({
-        geometry: new Point(
-          [item.lon, item.lat], // lcc 기준
-          // transform([item.lon, item.lat], 'LCC', 'EPSG:4326'),
-        ),
+        geometry: new Point([item.lon, item.lat]),
         wd: item.wd,
         ws: item.ws,
       }),
@@ -186,10 +176,7 @@ export function createArrowFeatures(data) {
 
 /** 그리드 Feature 생성 */
 export function createGridFeatures(data) {
-  const points = data.map(item =>
-    // transform([item.lon, item.lat], 'LCC', 'EPSG:4326'),
-    [item.lon, item.lat],
-  );
+  const points = data.map(item => [item.lon, item.lat]);
 
   const feature = new Feature({
     geometry: new MultiPoint(points),

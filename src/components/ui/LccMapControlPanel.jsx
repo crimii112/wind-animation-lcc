@@ -9,10 +9,28 @@ import {
 } from 'lucide-react';
 
 import { LccContext } from '@/components/lcc/LccContext';
+import ColorScale from './ColorScale';
 
 const MIN_TSTEP = 0;
 const MAX_TSTEP = 238;
 const BASE_SPEED = 1000; // 1초
+
+const LayerToggle = ({ label, checked, onChange, children }) => {
+  return (
+    <ControlGroup>
+      <label className="main-label">
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={e => onChange(e.target.checked)}
+        />
+        <span>{label}</span>
+      </label>
+
+      {checked && children && <div className="sub-container">{children}</div>}
+    </ControlGroup>
+  );
+};
 
 /**
  * 지도 컨트롤 패널 컴포넌트
@@ -197,333 +215,185 @@ const LccMapControlPanel = ({ datetime, segments, scaleMeta }) => {
       </ControlRow>
 
       {/* 레이어 visible, 스타일(투명도, 색상) 설정 */}
-      <ControlGroup>
-        <label className="main-label">
+      <LayerToggle
+        label="모델링 농도장"
+        checked={layerVisible.concPolygon}
+        onChange={v => toggleLayer('concPolygon', v)}
+      >
+        <SubRow>
+          <span className="label-text">폴리곤 방식</span>
+          <select
+            value={settings.polygonMode}
+            onChange={e => updateSettings('polygonMode', e.target.value)}
+          >
+            <option value="multi">멀티 폴리곤</option>
+            <option value="single">단일 폴리곤(오버레이)</option>
+          </select>
+        </SubRow>
+        <SubRow>
+          <span className="label-text">투명도</span>
           <input
-            type="checkbox"
-            checked={layerVisible.concPolygon}
-            onChange={e => toggleLayer('concPolygon', e.target.checked)}
+            type="range"
+            min="0"
+            max="1"
+            step="0.1"
+            value={style.concPolygonOpacity}
+            onChange={e =>
+              updateStyle('concPolygonOpacity', Number(e.target.value))
+            }
           />
-          <span>모델링 농도장</span>
-        </label>
+          <span className="value-text">
+            {Math.round(style.concPolygonOpacity * 100)}%
+          </span>
+        </SubRow>
+      </LayerToggle>
 
-        {layerVisible.concPolygon && (
-          <div className="sub-container">
-            <SubRow>
-              <span className="label-text">폴리곤 방식</span>
-              <select
-                value={settings.polygonMode}
-                onChange={e => updateSettings('polygonMode', e.target.value)}
-              >
-                <option value="multi">멀티 폴리곤</option>
-                <option value="single">단일 폴리곤(오버레이)</option>
-              </select>
-            </SubRow>
-            <SubRow>
-              <span className="label-text">투명도</span>
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.1"
-                value={style.concPolygonOpacity}
-                onChange={e =>
-                  updateStyle('concPolygonOpacity', Number(e.target.value))
-                }
-              />
-              <span className="value-text">
-                {Math.round(style.concPolygonOpacity * 100)}%
-              </span>
-            </SubRow>
-          </div>
-        )}
-      </ControlGroup>
-      <ControlGroup>
-        <label className="main-label">
+      <LayerToggle
+        label="바람장 화살표"
+        checked={layerVisible.windArrows}
+        onChange={v => toggleLayer('windArrows', v)}
+      >
+        <SubRow>
+          <span className="label-text">투명도</span>
           <input
-            type="checkbox"
-            checked={layerVisible.windArrows}
-            onChange={e => toggleLayer('windArrows', e.target.checked)}
+            type="range"
+            min="0"
+            max="1"
+            step="0.1"
+            value={style.windArrowsOpacity}
+            onChange={e =>
+              updateStyle('windArrowsOpacity', Number(e.target.value))
+            }
           />
-          <span>바람장 화살표</span>
-        </label>
-        {layerVisible.windArrows && (
-          <div className="sub-container">
-            <SubRow>
-              <span className="label-text">투명도</span>
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.1"
-                value={style.windArrowsOpacity}
-                onChange={e =>
-                  updateStyle('windArrowsOpacity', Number(e.target.value))
-                }
-              />
-              <span className="value-text">
-                {Math.round(style.windArrowsOpacity * 100)}%
-              </span>
-            </SubRow>
-            <SubRow>
-              <span className="label-text">색상</span>
-              <ColorPicker>
-                <div style={{ backgroundColor: style.arrowColor }} />
-                <input
-                  type="color"
-                  value={style.arrowColor}
-                  onChange={e => updateStyle('arrowColor', e.target.value)}
-                />
-              </ColorPicker>
-            </SubRow>
-          </div>
-        )}
-      </ControlGroup>
-      <ControlGroup>
-        <label className="main-label">
+          <span className="value-text">
+            {Math.round(style.windArrowsOpacity * 100)}%
+          </span>
+        </SubRow>
+        <SubRow>
+          <span className="label-text">색상</span>
+          <ColorPicker>
+            <div style={{ backgroundColor: style.arrowColor }} />
+            <input
+              type="color"
+              value={style.arrowColor}
+              onChange={e => updateStyle('arrowColor', e.target.value)}
+            />
+          </ColorPicker>
+        </SubRow>
+      </LayerToggle>
+
+      <LayerToggle
+        label="바람장 애니메이션"
+        checked={layerVisible.windAnimation}
+        onChange={v => toggleLayer('windAnimation', v)}
+      >
+        <SubRow>
+          <span className="label-text">색상</span>
+          <ColorPicker>
+            <div style={{ backgroundColor: style.windColor }} />
+            <input
+              type="color"
+              value={style.windColor}
+              onChange={e => updateStyle('windColor', e.target.value)}
+            />
+          </ColorPicker>
+        </SubRow>
+      </LayerToggle>
+
+      <LayerToggle
+        label="바람장 earth"
+        checked={layerVisible.earthWind}
+        onChange={v => toggleLayer('earthWind', v)}
+      >
+        <SubRow>
+          <span className="label-text">색상</span>
+          <ColorPicker>
+            <div style={{ backgroundColor: style.earthWindColor }} />
+            <input
+              type="color"
+              value={style.earthWindColor}
+              onChange={e => updateStyle('earthWindColor', e.target.value)}
+            />
+          </ColorPicker>
+        </SubRow>
+      </LayerToggle>
+
+      <LayerToggle
+        label="농도장 earth"
+        checked={layerVisible.earthScalar}
+        onChange={v => toggleLayer('earthScalar', v)}
+      >
+        <ColorScale segments={segments} scaleMeta={scaleMeta} />
+        <SubRow>
+          <span className="label-text">투명도</span>
           <input
-            type="checkbox"
-            checked={layerVisible.windAnimation}
-            onChange={e => toggleLayer('windAnimation', e.target.checked)}
+            type="range"
+            min="0"
+            max="1"
+            step="0.1"
+            value={style.earthScalarOpacity}
+            onChange={e =>
+              updateStyle('earthScalarOpacity', Number(e.target.value))
+            }
           />
-          <span>바람장 애니메이션</span>
-        </label>
-        {layerVisible.windAnimation && (
-          <div className="sub-container">
-            <SubRow>
-              <span className="label-text">색상</span>
-              <ColorPicker>
-                <div style={{ backgroundColor: style.windColor }} />
-                <input
-                  type="color"
-                  value={style.windColor}
-                  onChange={e => updateStyle('windColor', e.target.value)}
-                />
-              </ColorPicker>
-            </SubRow>
-          </div>
-        )}
-      </ControlGroup>
-      <ControlGroup>
-        <label className="main-label">
+          <span className="value-text">
+            {Math.round(style.earthScalarOpacity * 100)}%
+          </span>
+        </SubRow>
+      </LayerToggle>
+
+      <LayerToggle
+        label="바람장 WebGL"
+        checked={layerVisible.webglWind}
+        onChange={v => toggleLayer('webglWind', v)}
+      />
+
+      <LayerToggle
+        label="시도 경계"
+        checked={layerVisible.sidoshp}
+        onChange={v => toggleLayer('sidoshp', v)}
+      >
+        <SubRow>
+          <span className="label-text">투명도</span>
           <input
-            type="checkbox"
-            checked={layerVisible.earthWind}
-            onChange={e => toggleLayer('earthWind', e.target.checked)}
+            type="range"
+            min="0"
+            max="1"
+            step="0.1"
+            value={style.sidoshpOpacity}
+            onChange={e =>
+              updateStyle('sidoshpOpacity', Number(e.target.value))
+            }
           />
-          <span>바람장 earth</span>
-        </label>
-        {layerVisible.earthWind && (
-          <div className="sub-container">
-            <SubRow>
-              <span className="label-text">색상</span>
-              <ColorPicker>
-                <div style={{ backgroundColor: style.earthWindColor }} />
-                <input
-                  type="color"
-                  value={style.earthWindColor}
-                  onChange={e => updateStyle('earthWindColor', e.target.value)}
-                />
-              </ColorPicker>
-            </SubRow>
-          </div>
-        )}
-      </ControlGroup>
-      <ControlGroup>
-        <label className="main-label">
-          <input
-            type="checkbox"
-            checked={layerVisible.earthScalar}
-            onChange={e => toggleLayer('earthScalar', e.target.checked)}
-          />
-          <span>농도장 earth</span>
-        </label>
-        {layerVisible.earthScalar && (
-          <div className="sub-container">
-            <ColorScale segments={segments} scaleMeta={scaleMeta} />
-            <SubRow>
-              <span className="label-text">투명도</span>
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.1"
-                value={style.earthScalarOpacity}
-                onChange={e =>
-                  updateStyle('earthScalarOpacity', Number(e.target.value))
-                }
-              />
-              <span className="value-text">
-                {Math.round(style.earthScalarOpacity * 100)}%
-              </span>
-            </SubRow>
-          </div>
-        )}
-      </ControlGroup>
-      <ControlGroup>
-        <label className="main-label">
-          <input
-            type="checkbox"
-            checked={layerVisible.webglWind}
-            onChange={e => toggleLayer('webglWind', e.target.checked)}
-          />
-          <span>바람장 WebGL</span>
-        </label>
-      </ControlGroup>
-      <ControlGroup>
-        <label className="main-label">
-          <input
-            type="checkbox"
-            checked={layerVisible.sidoshp}
-            onChange={e => toggleLayer('sidoshp', e.target.checked)}
-          />
-          <span>시도 경계</span>
-        </label>
-        {layerVisible.sidoshp && (
-          <div className="sub-container">
-            <SubRow>
-              <span className="label-text">투명도</span>
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.1"
-                value={style.sidoshpOpacity}
-                onChange={e =>
-                  updateStyle('sidoshpOpacity', Number(e.target.value))
-                }
-              />
-              <span className="value-text">
-                {Math.round(style.sidoshpOpacity * 100)}%
-              </span>
-            </SubRow>
-            <SubRow>
-              <span className="label-text">색상</span>
-              <ColorPicker>
-                <div style={{ backgroundColor: style.sidoshpColor }} />
-                <input
-                  type="color"
-                  value={style.sidoshpColor}
-                  onChange={e => updateStyle('sidoshpColor', e.target.value)}
-                />
-              </ColorPicker>
-            </SubRow>
-          </div>
-        )}
-      </ControlGroup>
-      <ControlGroup>
-        <label className="main-label">
-          <input
-            type="checkbox"
-            checked={layerVisible.grid}
-            onChange={e => toggleLayer('grid', e.target.checked)}
-          />
-          <span>격자</span>
-        </label>
-      </ControlGroup>
+          <span className="value-text">
+            {Math.round(style.sidoshpOpacity * 100)}%
+          </span>
+        </SubRow>
+        <SubRow>
+          <span className="label-text">색상</span>
+          <ColorPicker>
+            <div style={{ backgroundColor: style.sidoshpColor }} />
+            <input
+              type="color"
+              value={style.sidoshpColor}
+              onChange={e => updateStyle('sidoshpColor', e.target.value)}
+            />
+          </ColorPicker>
+        </SubRow>
+      </LayerToggle>
+
+      <LayerToggle
+        label="격자"
+        checked={layerVisible.grid}
+        onChange={v => toggleLayer('grid', v)}
+      />
+
       <FoldBtn onClick={() => setOpen(false)}>접어두기</FoldBtn>
     </Panel>
   );
 };
 
 export default LccMapControlPanel;
-
-function segmentsToLinearGradient(segments) {
-  const min = segments[0][0];
-  const max = segments[segments.length - 1][0];
-
-  const stops = segments.map(([value, [r, g, b]]) => {
-    const pct = ((value - min) / (max - min)) * 100;
-    return `rgb(${r}, ${g}, ${b}) ${pct.toFixed(1)}%`;
-  });
-
-  return `linear-gradient(to right, ${stops.join(', ')})`;
-}
-
-function valueToColor(segments, value) {
-  for (let i = 0; i < segments.length - 1; i++) {
-    const [v0, c0] = segments[i];
-    const [v1, c1] = segments[i + 1];
-
-    if (value >= v0 && value <= v1) {
-      const t = (value - v0) / (v1 - v0);
-      const r = Math.round(c0[0] + t * (c1[0] - c0[0]));
-      const g = Math.round(c0[1] + t * (c1[1] - c0[1]));
-      const b = Math.round(c0[2] + t * (c1[2] - c0[2]));
-      return `rgb(${r}, ${g}, ${b})`;
-    }
-  }
-
-  // 범위 밖 fallback
-  const last = segments[segments.length - 1][1];
-  return `rgb(${last[0]}, ${last[1]}, ${last[2]})`;
-}
-
-const ColorScale = ({ segments, scaleMeta }) => {
-  if (!segments || segments.length === 0) return null;
-
-  const min = segments[0][0];
-  const max = segments[segments.length - 1][0];
-  const gradient = segmentsToLinearGradient(segments);
-
-  const barRef = useRef(null);
-  const [hoverValue, setHoverValue] = useState(null);
-  const [hoverX, setHoverX] = useState(0);
-  const [hoverColor, setHoverColor] = useState(null);
-
-  let displayValue = '';
-  if (hoverValue !== null) displayValue = scaleMeta.format(hoverValue);
-
-  const handleMouseMove = e => {
-    const rect = barRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const t = Math.min(Math.max(x / rect.width, 0), 1);
-
-    const value = min + t * (max - min);
-    const color = valueToColor(segments, value);
-
-    setHoverValue(value);
-    setHoverColor(color);
-    setHoverX(x);
-  };
-
-  const handleLeave = () => {
-    setHoverValue(null);
-    setHoverColor(null);
-  };
-
-  return (
-    <ColorScaleWrap>
-      <div
-        ref={barRef}
-        className="bar"
-        style={{ background: gradient }}
-        onMouseMove={handleMouseMove}
-        onMouseLeave={handleLeave}
-      />
-
-      {hoverValue != null && (
-        <div
-          className="tooltip"
-          style={{ left: hoverX, background: hoverColor }}
-        >
-          {displayValue} {scaleMeta.unit}
-        </div>
-      )}
-
-      <div className="labels">
-        <span>
-          {scaleMeta.labelFormat(min)}
-          {scaleMeta.unit}
-        </span>
-        <span>
-          {scaleMeta.labelFormat(max)}
-          {scaleMeta.unit}
-        </span>
-      </div>
-    </ColorScaleWrap>
-  );
-};
 
 const Panel = styled.div`
   position: absolute;
@@ -809,42 +679,5 @@ const SpeedSelect = styled.select`
   outline: none;
   &:hover {
     border-color: #adb5bd;
-  }
-`;
-
-const ColorScaleWrap = styled.div`
-  position: relative;
-  margin-top: 6px;
-  width: 100%;
-  box-sizing: border-box;
-
-  .bar {
-    width: 100%;
-    height: 15px;
-    border-radius: 6px;
-    border: 1px solid #ccc;
-    cursor: crosshair;
-  }
-
-  .labels {
-    margin-top: 2px;
-    display: flex;
-    justify-content: space-between;
-    font-size: 10px;
-    color: #777;
-  }
-
-  .tooltip {
-    position: absolute;
-    top: -26px;
-    transform: translateX(-50%);
-    padding: 2px 6px;
-    font-size: 11px;
-    font-weight: 600;
-    color: #fff;
-    border-radius: 4px;
-    white-space: nowrap;
-    pointer-events: none;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
   }
 `;

@@ -14,6 +14,7 @@ const LccLegend = ({
   title,
   rgbs,
   unit,
+  precision = 0,
   pollLegendOn = true,
   wsLegendOn = true,
 }) => {
@@ -32,16 +33,10 @@ const LccLegend = ({
             {unit ? `(${unit})` : ''}
           </LegendTitle>
           <ColorList>
-            {rgbs.toReversed().map(item => (
+            {[...rgbs].reverse().map(item => (
               <ColorRow key={item.min}>
                 <ColorBox style={{ backgroundColor: item.color }} />
-                <ValueText>
-                  {title === 'O3' || title === 'NO2' || title === 'SO2'
-                    ? item.min.toFixed(3)
-                    : title === 'CO' || title === '풍속'
-                      ? item.min.toFixed(1)
-                      : item.min}
-                </ValueText>
+                <ValueText>{item.min.toFixed(precision)}</ValueText>
               </ColorRow>
             ))}
           </ColorList>
@@ -132,7 +127,7 @@ const ArrowImg = ({ ws }) => {
     vc.drawGeometry(new Point([cx, cy]));
     vc.setStyle(new Style({ image: head }));
     vc.drawGeometry(new Point([cx, cy]));
-  }, []);
+  }, [ws]);
 
   return <canvas ref={arrowImgRef} />;
 };

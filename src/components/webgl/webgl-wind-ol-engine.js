@@ -8,9 +8,7 @@ export class WebGLWindOLAnimator {
     this.canvas = document.createElement('canvas');
     this.canvas.style.position = 'absolute';
     this.canvas.style.pointerEvents = 'none';
-    // this.canvas.style.zIndex = 100;
 
-    // map.getViewport().appendChild(this.canvas);
     const viewport = map.getViewport();
     const overlayContainer = viewport.querySelector(
       '.ol-overlaycontainer-stopevent',

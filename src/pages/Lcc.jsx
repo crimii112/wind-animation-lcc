@@ -1,14 +1,12 @@
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
-import axios from 'axios';
 import styled from 'styled-components';
 
 import { Fill, RegularShape, Stroke, Style } from 'ol/style';
 import GeoJSON from 'ol/format/GeoJSON';
 
 import MapContext from '@/components/map/MapContext';
-import { createLccWindOverlay } from '@/components/wind/lcc-wind-overlay';
-import LccMapControlPanel from '@/components/ui/lcc-map-control-panel';
-import LccLegend from '@/components/ui/lcc-legend';
+import LccMapControlPanel from '@/components/ui/LccMapControlPanel';
+import LccLegend from '@/components/ui/LccLegend';
 import WindParticle from '@/components/wind/wind-particle';
 import { LccContext } from '@/components/lcc/LccContext';
 import {
@@ -31,7 +29,8 @@ import {
   EARTH_SCALE_META,
 } from '@/components/earth/earth-colors';
 import { WebGLWindOLAnimator } from '@/components/webgl/webgl-wind-ol-engine';
-import { Overlay } from 'ol';
+import { useLccApi } from '@/hooks/useLccApi';
+import { usePolygonOverlay } from '@/hooks/usePolygonOverlay';
 
 /**
  * METCRO2D, ACONC 파일 데이터로 가져옴 => layer 하나
@@ -40,8 +39,6 @@ function Lcc({ mapId, SetMap }) {
   const GRID_KM_MAP_CONFIG = {
     9: { center: [131338, -219484], zoom: 7.5 },
     27: { center: [-121523, -46962], zoom: 5 },
-    // 9: { center: transform([131338, -219484], 'LCC', 'EPSG:4326'), zoom: 7.5 },
-    // 27: { center: transform([-121523, -46962], 'LCC', 'EPSG:4326'), zoom: 5 },
   };
 
   const map = useContext(MapContext);
@@ -56,9 +53,6 @@ function Lcc({ mapId, SetMap }) {
   const layersRef = useRef(createLccLayers());
   const settingsRef = useRef(settings);
   const layerVisibleRef = useRef(layerVisible);
-  const polygonOverlayRef = useRef(null);
-  const polygonOverlayElRef = useRef(null);
-  const windOverlayRef = useRef([]);
   const windParticlesRef = useRef([]);
   const earthWindAnimatorRef = useRef(null);
   const earthScalarAnimatorRef = useRef(null);
@@ -66,7 +60,10 @@ function Lcc({ mapId, SetMap }) {
 
   const halfCell = (settings.gridKm * 1000) / 2;
 
-  // 지도 초기화
+  const { fetchSidoShp, fetchLccData, fetchEarthData, fetchWebGLData } =
+    useLccApi(settings);
+
+  /** 지도 레이어 초기 등록/해제 */
   useEffect(() => {
     if (!map.ol_uid) return;
     if (SetMap) SetMap(map);
@@ -89,36 +86,6 @@ function Lcc({ mapId, SetMap }) {
     map.addLayer(layerEarthWindCanvas);
     map.addLayer(layerGrid);
 
-    map.on('singleclick', handleSingleClick);
-    map.on('pointermove', handlePointerMove);
-    map.getViewport().addEventListener('mouseleave', handleMapLeave);
-
-    const el = document.createElement('div');
-    el.className = 'ol-tooltip';
-
-    el.style.padding = '6px 8px';
-    el.style.background = 'rgba(255,255,255,0.95)';
-    el.style.color = '#000';
-    el.style.borderRadius = '6px';
-    el.style.fontSize = '13px';
-    el.style.fontWeight = '600';
-    el.style.whiteSpace = 'pre-line';
-    el.style.pointerEvents = 'none';
-    el.style.position = 'relative';
-    el.style.boxShadow = '0 2px 6px rgba(0,0,0,0.25)';
-    el.style.border = '1px solid #ccc';
-
-    polygonOverlayElRef.current = el;
-    const overlay = new Overlay({
-      element: el,
-      offset: [0, -10],
-      positioning: 'bottom-center',
-      stopEvent: true,
-    });
-
-    polygonOverlayRef.current = overlay;
-    map.addOverlay(overlay);
-
     return () => {
       map.removeLayer(layerSidoShp);
       map.removeLayer(layerConcPolygon);
@@ -127,68 +94,89 @@ function Lcc({ mapId, SetMap }) {
       map.removeLayer(layerWindAnimation);
       map.removeLayer(layerEarthWindCanvas);
       map.removeLayer(layerGrid);
-      map.un('singleclick', handleSingleClick);
-      map.un('pointermove', handlePointerMove);
-      map.getViewport().removeEventListener('mouseleave', handleMapLeave);
-      map.removeOverlay(overlay);
-      polygonOverlayRef.current = null;
-      polygonOverlayElRef.current = null;
     };
   }, [map, map.ol_uid]);
 
-  const handleSingleClick = e => {
-    // console.log(e.coordinate);
-    // console.log(transform(e.coordinate, 'EPSG:3857', 'LCC'));
-  };
+  /** 모델링 농도장 폴리곤 hover tooltip(overlay) 처리 */
+  usePolygonOverlay({ map, layersRef, settingsRef, layerVisibleRef });
 
-  const handlePointerMove = e => {
-    const overlay = polygonOverlayRef.current;
-    const el = polygonOverlayElRef.current;
-    if (!overlay || !el) return;
-
-    const { polygonMode } = settingsRef.current;
-    const { concPolygon } = layerVisibleRef.current;
-
-    if (polygonMode !== 'single' || !concPolygon) {
-      overlay.setPosition(undefined);
-      return;
-    }
-
-    const pixel = map.getEventPixel(e.originalEvent);
-
-    const feature = map.forEachFeatureAtPixel(pixel, f => f, {
-      hitTolerance: 2,
-      layerFilter: layer => layer === layersRef.current.layerConcPolygon,
-    });
-
-    if (!feature) {
-      overlay.setPosition(undefined);
-      return;
-    }
-
-    const overlayTxt = feature.get('overlay');
-
-    if (overlayTxt != null && overlayTxt !== '') {
-      el.innerText = overlayTxt;
-      overlay.setPosition(e.coordinate);
-    } else {
-      overlay.setPosition(undefined);
-    }
-  };
-
-  const handleMapLeave = () => {
-    const overlay = polygonOverlayRef.current;
-    if (overlay) overlay.setPosition(undefined);
-  };
-
+  /** 시도 경계(shp) 데이터 로드 */
   useEffect(() => {
     if (!map?.ol_uid) return;
-    getSidoShp();
+
+    const load = async () => {
+      const { sourceSidoShp, layerSidoShp } = layersRef.current;
+      sourceSidoShp.clear();
+
+      try {
+        const data = await fetchSidoShp();
+        if (!data.sidoshp) return;
+
+        const features = new GeoJSON().readFeatures(data.sidoshp, {
+          dataProjection: 'EPSG:4326',
+          featureProjection: 'LCC',
+        });
+
+        sourceSidoShp.addFeatures(features);
+
+        layerSidoShp.setStyle(
+          new Style({
+            stroke: new Stroke({
+              color: 'black',
+              width: 1.5,
+            }),
+          }),
+        );
+      } catch (e) {
+        console.error('Error fetching sido shp data:', e);
+        alert(
+          '시도 shp 데이터를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.',
+        );
+      }
+    };
+
+    load();
   }, [map?.ol_uid]);
 
+  /** LCC(농도 폴리곤 + 바람 화살표) 데이터 로드 */
   useEffect(() => {
     if (!map?.ol_uid) return;
-    getLccData();
+
+    const load = async () => {
+      const { sourceConcPolygon, sourceWindArrows, sourceGrid } =
+        layersRef.current;
+
+      sourceConcPolygon.clear();
+      sourceWindArrows.clear();
+      sourceGrid.clear();
+
+      windParticlesRef.current = [];
+      setWindData([]);
+
+      try {
+        const data = await fetchLccData();
+
+        if (data.datetime) setDatetimeTxt(data.datetime);
+
+        // 모델링 농도 Polygon 생성
+        if (data.polygonData) {
+          setPolygonData(data.polygonData);
+          sourceGrid.addFeatures(createGridFeatures(data.polygonData));
+        }
+
+        if (data.arrowData) {
+          setWindData(data.arrowData); // 바람 애니메이션 데이터 설정
+          sourceWindArrows.addFeatures(createArrowFeatures(data.arrowData)); // 화살표 생성
+        }
+      } catch (e) {
+        console.error('Error fetching lcc data:', e);
+        alert(
+          '모델링 데이터를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.',
+        );
+      }
+    };
+
+    load();
   }, [
     map?.ol_uid,
     settings.gridKm,
@@ -198,10 +186,25 @@ function Lcc({ mapId, SetMap }) {
     settings.arrowGap,
   ]);
 
+  /** Earth 엔진용 데이터 로드 */
   useEffect(() => {
     if (!map?.ol_uid) return;
-    getEarthData();
-    getWebGLData();
+
+    const load = async () => {
+      setEarthData([]);
+      try {
+        const data = await fetchEarthData();
+
+        if (data.earthData) setEarthData(data.earthData);
+      } catch (e) {
+        console.error('Error fetching earth data:', e);
+        alert(
+          '모델링 데이터를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.',
+        );
+      }
+    };
+
+    load();
   }, [
     map?.ol_uid,
     settings.gridKm,
@@ -210,12 +213,38 @@ function Lcc({ mapId, SetMap }) {
     settings.bgPoll,
   ]);
 
+  /** WebGL 엔진용 데이터 로드 */
+  useEffect(() => {
+    if (!map?.ol_uid) return;
+
+    const load = async () => {
+      try {
+        const data = await fetchWebGLData();
+        if (data) setWebGLData(data);
+      } catch (e) {
+        console.error('Error fetching webgl data:', e);
+        alert(
+          '모델링 데이터를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.',
+        );
+      }
+    };
+
+    load();
+  }, [
+    map?.ol_uid,
+    settings.gridKm,
+    settings.layer,
+    settings.tstep,
+    settings.bgPoll,
+  ]);
+
+  /** 최신 settings/layerVisible을 이벤트 핸들러/overlay에서 참조할 수 있도록 ref 동기화 */
   useEffect(() => {
     settingsRef.current = settings;
     layerVisibleRef.current = layerVisible;
   }, [settings, layerVisible]);
 
-  // gridKm 변경 시 지도 뷰 재설정
+  /** gridKm 변경 시 지도 뷰(center/zoom) 재설정 */
   useEffect(() => {
     if (!map?.ol_uid) return;
 
@@ -229,6 +258,7 @@ function Lcc({ mapId, SetMap }) {
     }
   }, [settings.gridKm]);
 
+  /** 레이어 표시/비표시 토글 반영 */
   useEffect(() => {
     const l = layersRef.current;
     l.layerSidoShp.setVisible(layerVisible.sidoshp);
@@ -240,19 +270,22 @@ function Lcc({ mapId, SetMap }) {
     l.layerGrid.setVisible(layerVisible.grid);
   }, [layerVisible]);
 
+  /** 모델링 농도장 레이어 투명도 반영 */
   useEffect(() => {
     layersRef.current.layerConcPolygon.setOpacity(style.concPolygonOpacity);
   }, [style.concPolygonOpacity]);
 
+  /** 바람장 화살표 레이어 투명도 반영 */
   useEffect(() => {
     layersRef.current.layerWindArrows.setOpacity(style.windArrowsOpacity);
   }, [style.windArrowsOpacity]);
 
+  /** 시도 경계 레이어 투명도 반영 */
   useEffect(() => {
     layersRef.current.layerSidoShp.setOpacity(style.sidoshpOpacity);
   }, [style.sidoshpOpacity]);
 
-  /** 바람 화살표 스타일 업데이트(색상, 바람 간격 바뀔 때마다) */
+  /** 바람 화살표 스타일(색상/스케일) 반영 */
   useEffect(() => {
     const layer = layersRef.current.layerWindArrows;
 
@@ -289,6 +322,7 @@ function Lcc({ mapId, SetMap }) {
     });
   }, [style.arrowColor, settings.arrowGap]);
 
+  /** 시도 경계 스타일(색상) 반영 */
   useEffect(() => {
     const layer = layersRef.current.layerSidoShp;
 
@@ -302,132 +336,7 @@ function Lcc({ mapId, SetMap }) {
     );
   }, [style.sidoshpColor]);
 
-  /* 시도 shp 데이터 요청 */
-  const getSidoShp = async () => {
-    const { sourceSidoShp, layerSidoShp } = layersRef.current;
-    sourceSidoShp.clear();
-
-    try {
-      const { data } = await axios.post(
-        `${import.meta.env.VITE_WIND_API_URL}/api/marker/sidoshp`,
-      );
-
-      if (!data.sidoshp) return;
-
-      const features = new GeoJSON().readFeatures(data.sidoshp, {
-        dataProjection: 'EPSG:4326',
-        featureProjection: 'LCC',
-      });
-
-      sourceSidoShp.addFeatures(features);
-
-      const style = new Style({
-        stroke: new Stroke({
-          color: 'black',
-          width: 1.5,
-        }),
-      });
-      layerSidoShp.setStyle(style);
-    } catch (e) {
-      console.error('Error fetching sido shp data:', e);
-      alert(
-        '시도 shp 데이터를 가져오는 데 실패했습니다. 나중에 다시 시도해주세요.',
-      );
-    }
-  };
-
-  /* lcc 데이터 요청 */
-  const getLccData = async () => {
-    const { sourceConcPolygon, sourceWindArrows, sourceGrid } =
-      layersRef.current;
-
-    sourceConcPolygon.clear();
-    sourceWindArrows.clear();
-    sourceGrid.clear();
-
-    windParticlesRef.current = [];
-    setWindData([]);
-
-    document.body.style.cursor = 'progress';
-
-    try {
-      const { data } = await axios.post(
-        `${import.meta.env.VITE_WIND_API_URL}/api/marker/lcc`,
-        {
-          gridKm: settings.gridKm,
-          layer: settings.layer,
-          tstep: settings.tstep,
-          bgPoll: settings.bgPoll,
-          arrowGap: settings.arrowGap,
-        },
-      );
-
-      if (data.datetime) setDatetimeTxt(data.datetime);
-
-      // 모델링 농도 Polygon 생성
-      if (data.polygonData) {
-        setPolygonData(data.polygonData);
-        sourceGrid.addFeatures(createGridFeatures(data.polygonData));
-      }
-
-      // 바람 애니메이션 데이터 설정
-      // 화살표 생성
-      if (data.arrowData) {
-        setWindData(data.arrowData);
-
-        sourceWindArrows.addFeatures(createArrowFeatures(data.arrowData));
-      }
-    } catch (e) {
-      console.error('Error fetching data:', e);
-      alert('데이터를 가져오는 데 실패했습니다. 나중에 다시 시도해주세요.');
-    } finally {
-      document.body.style.cursor = 'default';
-    }
-  };
-
-  /* earth 데이터 요청 */
-  const getEarthData = async () => {
-    setEarthData([]);
-    try {
-      const { data } = await axios.post(
-        `${import.meta.env.VITE_WIND_API_URL}/api/marker/earth`,
-        {
-          gridKm: settings.gridKm,
-          layer: settings.layer,
-          tstep: settings.tstep,
-          bgPoll: settings.bgPoll,
-        },
-      );
-
-      if (data.earthData) setEarthData(data.earthData);
-    } catch (e) {
-      console.error('Error fetching data:', e);
-      alert('데이터를 가져오는 데 실패했습니다. 나중에 다시 시도해주세요.');
-    }
-  };
-
-  /* webgl 데이터 요청 */
-  const getWebGLData = async () => {
-    try {
-      const { data } = await axios.post(
-        `${import.meta.env.VITE_WIND_API_URL}/api/marker/webgl`,
-        {
-          gridKm: settings.gridKm,
-          layer: settings.layer,
-          tstep: settings.tstep,
-          poll: settings.bgPoll,
-        },
-      );
-
-      if (data) setWebGLData(data);
-    } catch (e) {
-      console.error('Error fetching data:', e);
-      alert(
-        'WebGL 데이터를 가져오는 데 실패했습니다. 나중에 다시 시도해주세요.',
-      );
-    }
-  };
-
+  /** polygonData/settings.polygonMode 변경 시 모델링 농도장 폴리곤 다시 그리기 */
   const redrawPolygons = useCallback(() => {
     const { sourceConcPolygon } = layersRef.current;
     sourceConcPolygon.clear();
@@ -445,13 +354,14 @@ function Lcc({ mapId, SetMap }) {
     redrawPolygons();
   }, [map?.ol_uid, polygonData, redrawPolygons]);
 
-  /* wind overlay(바람 애니메이션) 추가 */
+  /** windData 변경 시 particle 객체 재생성(색상 반영) */
   useEffect(() => {
     windParticlesRef.current = windData.map(
       item => new WindParticle(item, style.windColor),
     );
   }, [windData, style.windColor]);
 
+  /** 바람장 애니메이션 루프 */
   useEffect(() => {
     if (!map?.ol_uid) return;
     if (!layerVisible.windAnimation) return;
@@ -492,21 +402,7 @@ function Lcc({ mapId, SetMap }) {
     };
   }, [map?.ol_uid, layerVisible.windAnimation]);
 
-  /* overlay 방식 바람 애니메이션 (미사용) */
-  // useEffect(() => {
-  //   if (!map?.ol_uid) return;
-
-  //   windOverlayRef.current.forEach(o => map.removeOverlay(o));
-  //   windOverlayRef.current = [];
-
-  //   if (!layerVisible.windAnimation || windData.length === 0) return;
-
-  //   windData.forEach(item => {
-  //     windOverlayRef.current.push(createLccWindOverlay(map, item));
-  //   });
-  // }, [map, windData, layerVisible.windAnimation]);
-
-  /* earth 바람장 추가 */
+  /** Earth 바람장 애니메이터 구동/정리 */
   const isMovingRef = useRef(false);
   useEffect(() => {
     if (!map?.ol_uid) return;
@@ -530,12 +426,16 @@ function Lcc({ mapId, SetMap }) {
       return;
     }
 
+    const zoom = map.getView().getZoom();
+
+    const particleMultiplier = zoom >= 9 ? 0.5 : zoom >= 7 ? 0.7 : 1;
+
     const grid = buildGrid(uRec, vRec);
     const animator = new EarthWindOLAnimator({
       map,
       layer,
       grid,
-      maxIntensity: 17,
+      maxIntensity: 17 * particleMultiplier,
       color: style.earthWindColor,
     });
 
@@ -572,7 +472,7 @@ function Lcc({ mapId, SetMap }) {
     };
   }, [map?.ol_uid, layerVisible.earthWind, earthData, style.earthWindColor]);
 
-  /** earth 농도장 */
+  /** Earth 농도장 렌더링 */
   useEffect(() => {
     if (!map?.ol_uid) return;
 
@@ -627,7 +527,7 @@ function Lcc({ mapId, SetMap }) {
     style.earthScalarOpacity,
   ]);
 
-  /** WebGL 바람장 */
+  /** WebGL 바람장 렌더링 */
   useEffect(() => {
     if (!map?.ol_uid) return;
     if (!layerVisible.webglWind) return;
@@ -686,6 +586,7 @@ function Lcc({ mapId, SetMap }) {
           title={POLL_META[settings.bgPoll].title}
           rgbs={RGBA_RANGES[settings.bgPoll]}
           unit={POLL_META[settings.bgPoll].unit}
+          precision={POLL_META[settings.bgPoll].precision}
           wsLegendOn={layerVisible.windArrows}
         />
       )}
@@ -694,15 +595,15 @@ function Lcc({ mapId, SetMap }) {
 }
 
 const POLL_META = {
-  O3: { title: 'O3', unit: 'ppm' },
-  SO2: { title: 'SO2', unit: 'ppm' },
-  NO2: { title: 'NO2', unit: 'ppm' },
-  CO: { title: 'CO', unit: 'ppm' },
-  PM10: { title: 'PM10', unit: 'µg/m³' },
-  'PM2.5': { title: 'PM2.5', unit: 'µg/m³' },
-  TEMP: { title: '온도', unit: '℃' },
-  WIND: { title: '풍속', unit: 'm/s' },
-  CAI: { title: 'CAI', unit: '' },
+  O3: { title: 'O3', unit: 'ppm', precision: 3 },
+  SO2: { title: 'SO2', unit: 'ppm', precision: 3 },
+  NO2: { title: 'NO2', unit: 'ppm', precision: 3 },
+  CO: { title: 'CO', unit: 'ppm', precision: 1 },
+  PM10: { title: 'PM10', unit: 'µg/m³', precision: 0 },
+  'PM2.5': { title: 'PM2.5', unit: 'µg/m³', precision: 0 },
+  TEMP: { title: '온도', unit: '℃', precision: 0 },
+  WIND: { title: '풍속', unit: 'm/s', precision: 1 },
+  CAI: { title: 'CAI', unit: '', precision: 0 },
 };
 
 export default Lcc;

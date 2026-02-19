@@ -81,7 +81,11 @@ const LccMapControlPanel = ({ datetime, segments, scaleMeta }) => {
   };
 
   if (!open)
-    return <PanelOpenBtn onClick={() => setOpen(true)}>지도 설정</PanelOpenBtn>;
+    return (
+      <PanelOpenBtn onClick={() => setOpen(true)}>
+        모델링 결과 설정
+      </PanelOpenBtn>
+    );
 
   return (
     <Panel>
@@ -127,11 +131,11 @@ const LccMapControlPanel = ({ datetime, segments, scaleMeta }) => {
             value={speedMultiplier}
             onChange={e => setSpeedMultiplier(Number(e.target.value))}
           >
+            <option value={0.1}>0.1x</option>
+            <option value={0.3}>0.3x</option>
             <option value={0.5}>0.5x</option>
-            <option value={0.8}>0.8x</option>
-            <option value={1}>1.0x</option>
+            <option value={1.0}>1.0x</option>
             <option value={1.2}>1.2x</option>
-            <option value={1.5}>1.5x</option>
           </SpeedSelect>
           <button
             className="icon-btn"
@@ -361,6 +365,7 @@ const LccMapControlPanel = ({ datetime, segments, scaleMeta }) => {
           >
             <option value="sido">시도</option>
             <option value="world">국가</option>
+            <option value="asia">아시아</option>
           </select>
         </SubRow>
         <SubRow>

@@ -21,6 +21,14 @@ export function createLccLayers() {
     opacity: 0.5,
   });
 
+  // 아시아 경계(shp)
+  const sourceAsiaShp = new VectorSource({ wrapX: false });
+  const layerAsiaShp = new VectorLayer({
+    source: sourceAsiaShp,
+    id: 'asiashp',
+    opacity: 0.5,
+  });
+
   // 모델링 농도장(polygon)
   const sourceConcPolygon = new VectorSource({ wrapX: false });
   const layerConcPolygon = new VectorLayer({
@@ -74,6 +82,8 @@ export function createLccLayers() {
     layerWorldShp,
     sourceSidoShp,
     layerSidoShp,
+    sourceAsiaShp,
+    layerAsiaShp,
     sourceConcPolygon,
     layerConcPolygon,
     sourceWindArrows,

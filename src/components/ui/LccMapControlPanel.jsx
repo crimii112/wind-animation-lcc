@@ -353,21 +353,10 @@ const LccMapControlPanel = ({ datetime, segments, scaleMeta }) => {
       />
 
       <LayerToggle
-        label="행정 경계"
+        label="국가 경계"
         checked={layerVisible.shp}
         onChange={v => toggleLayer('shp', v)}
       >
-        <SubRow>
-          <span className="label-text">범위</span>
-          <select
-            value={settings.boundaryType}
-            onChange={e => updateSettings('boundaryType', e.target.value)}
-          >
-            <option value="sido">시도</option>
-            <option value="world">국가</option>
-            <option value="asia">아시아</option>
-          </select>
-        </SubRow>
         <SubRow>
           <span className="label-text">투명도</span>
           <input
@@ -439,18 +428,24 @@ const PanelOpenBtn = styled.button`
   left: 12px;
   z-index: 1000;
 
-  padding: 8px 10px;
-  font-size: 13px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-  background: rgba(255, 255, 255, 0.85);
+  width: 100px;
+  height: 36px;
+
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.2;
+
+  border: none;
+  border-radius: 8px;
+  background: #ffffff;
+
   cursor: pointer;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: all 0.2s;
+  transition: all 0.2s ease;
+
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 
   &:hover {
-    background: #f8f9fa;
-    border-color: #bbb;
+    background: #f3f3f3;
   }
 `;
 

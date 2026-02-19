@@ -182,18 +182,24 @@ const LegendOpenBtn = styled.button`
   right: 12px;
   z-index: 1000;
 
-  padding: 8px 10px;
-  font-size: 13px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-  background: rgba(255, 255, 255, 0.85);
+  width: 36px;
+  height: 36px;
+
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.2;
+
+  border: none;
+  border-radius: 8px;
+  background: #ffffff;
+
   cursor: pointer;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: all 0.2s;
+  transition: all 0.2s ease;
+
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 
   &:hover {
-    background: rgba(255, 255, 255, 1);
-    border-color: #bbb;
+    background: #f3f3f3;
   }
 `;
 

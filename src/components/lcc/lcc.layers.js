@@ -5,22 +5,6 @@ import { MultiPoint, MultiPolygon, Point, Polygon } from 'ol/geom';
 import { Feature } from 'ol';
 
 export function createLccLayers() {
-  // 시도 경계(shp)
-  const sourceSidoShp = new VectorSource({ wrapX: false });
-  const layerSidoShp = new VectorLayer({
-    source: sourceSidoShp,
-    id: 'sidoshp',
-    opacity: 0.5,
-  });
-
-  // 전세계 경계(shp)
-  const sourceWorldShp = new VectorSource({ wrapX: false });
-  const layerWorldShp = new VectorLayer({
-    source: sourceWorldShp,
-    id: 'worldshp',
-    opacity: 0.5,
-  });
-
   // 아시아 경계(shp)
   const sourceAsiaShp = new VectorSource({ wrapX: false });
   const layerAsiaShp = new VectorLayer({
@@ -78,10 +62,6 @@ export function createLccLayers() {
   });
 
   return {
-    sourceWorldShp,
-    layerWorldShp,
-    sourceSidoShp,
-    layerSidoShp,
     sourceAsiaShp,
     layerAsiaShp,
     sourceConcPolygon,

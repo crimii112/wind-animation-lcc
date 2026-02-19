@@ -37,8 +37,8 @@ import { usePolygonOverlay } from '@/hooks/usePolygonOverlay';
  */
 function Lcc({ mapId, SetMap }) {
   const GRID_KM_MAP_CONFIG = {
-    9: { center: [131338, -219484], zoom: 7.5 },
-    27: { center: [-121523, -46962], zoom: 5.5 },
+    9: { center: [131338, -219484], zoom: 7.8 },
+    27: { center: [-121523, -46962], zoom: 5 },
   };
 
   const map = useContext(MapContext);
@@ -69,8 +69,6 @@ function Lcc({ mapId, SetMap }) {
     if (SetMap) SetMap(map);
 
     const {
-      layerSidoShp,
-      layerWorldShp,
       layerAsiaShp,
       layerConcPolygon,
       layerWindArrows,
@@ -80,8 +78,6 @@ function Lcc({ mapId, SetMap }) {
       layerGrid,
     } = layersRef.current;
 
-    map.addLayer(layerSidoShp);
-    map.addLayer(layerWorldShp);
     map.addLayer(layerAsiaShp);
     map.addLayer(layerConcPolygon);
     map.addLayer(layerEarthScalarCanvas);
@@ -91,8 +87,6 @@ function Lcc({ mapId, SetMap }) {
     map.addLayer(layerGrid);
 
     return () => {
-      map.removeLayer(layerSidoShp);
-      map.removeLayer(layerWorldShp);
       map.removeLayer(layerAsiaShp);
       map.removeLayer(layerConcPolygon);
       map.removeLayer(layerEarthScalarCanvas);
@@ -111,39 +105,12 @@ function Lcc({ mapId, SetMap }) {
     if (!map?.ol_uid) return;
 
     const load = async () => {
-      const {
-        sourceSidoShp,
-        layerSidoShp,
-        sourceWorldShp,
-        layerWorldShp,
-        sourceAsiaShp,
-        layerAsiaShp,
-      } = layersRef.current;
-      sourceSidoShp.clear();
-      sourceWorldShp.clear();
+      const { sourceAsiaShp, layerAsiaShp } = layersRef.current;
       sourceAsiaShp.clear();
 
       try {
         const data = await fetchShp();
         if (!data) return;
-
-        if (data.sidoshp) {
-          const sidoFeatures = new GeoJSON().readFeatures(data.sidoshp, {
-            dataProjection: 'EPSG:4326',
-            featureProjection: 'LCC',
-          });
-
-          sourceSidoShp.addFeatures(sidoFeatures);
-        }
-
-        if (data.worldshp) {
-          const worldFeatures = new GeoJSON().readFeatures(data.worldshp, {
-            dataProjection: 'EPSG:4326',
-            featureProjection: 'LCC',
-          });
-
-          sourceWorldShp.addFeatures(worldFeatures);
-        }
 
         if (data.asiashp) {
           const asiaFeatures = new GeoJSON().readFeatures(data.asiashp, {
@@ -161,8 +128,6 @@ function Lcc({ mapId, SetMap }) {
           }),
         });
 
-        layerSidoShp.setStyle(boundaryStyle);
-        layerWorldShp.setStyle(boundaryStyle);
         layerAsiaShp.setStyle(boundaryStyle);
       } catch (e) {
         console.error('Error fetching sido shp data:', e);
@@ -296,6 +261,7 @@ function Lcc({ mapId, SetMap }) {
   /** 레이어 표시/비표시 토글 반영 */
   useEffect(() => {
     const l = layersRef.current;
+    l.layerAsiaShp.setVisible(layerVisible.shp);
     l.layerConcPolygon.setVisible(layerVisible.concPolygon);
     l.layerWindArrows.setVisible(layerVisible.windArrows);
     l.layerWindAnimation.setVisible(layerVisible.windAnimation);
@@ -303,22 +269,6 @@ function Lcc({ mapId, SetMap }) {
     l.layerEarthScalarCanvas.setVisible(layerVisible.earthScalar);
     l.layerGrid.setVisible(layerVisible.grid);
   }, [layerVisible]);
-
-  /** 행정 경계 종류 선택(시도/국가) 반영 */
-  useEffect(() => {
-    const { layerSidoShp, layerWorldShp, layerAsiaShp } = layersRef.current;
-
-    if (!layerVisible.shp) {
-      layerSidoShp.setVisible(false);
-      layerWorldShp.setVisible(false);
-      layerAsiaShp.setVisible(false);
-      return;
-    }
-
-    layerSidoShp.setVisible(settings.boundaryType === 'sido');
-    layerWorldShp.setVisible(settings.boundaryType === 'world');
-    layerAsiaShp.setVisible(settings.boundaryType === 'asia');
-  }, [layerVisible.shp, settings.boundaryType]);
 
   /** 모델링 농도장 레이어 투명도 반영 */
   useEffect(() => {
@@ -332,10 +282,7 @@ function Lcc({ mapId, SetMap }) {
 
   /** 행정 경계 레이어 투명도 반영 */
   useEffect(() => {
-    const { layerSidoShp, layerWorldShp, layerAsiaShp } = layersRef.current;
-    layerSidoShp.setOpacity(style.shpOpacity);
-    layerWorldShp.setOpacity(style.shpOpacity);
-    layerAsiaShp.setOpacity(style.shpOpacity);
+    layersRef.current.layerAsiaShp.setOpacity(style.shpOpacity);
   }, [style.shpOpacity]);
 
   /** 바람 화살표 스타일(색상/스케일) 반영 */
@@ -377,17 +324,13 @@ function Lcc({ mapId, SetMap }) {
 
   /** 경계 스타일(색상) 반영 */
   useEffect(() => {
-    const { layerSidoShp, layerWorldShp, layerAsiaShp } = layersRef.current;
-
     const s = new Style({
       stroke: new Stroke({
         color: style.shpColor,
         width: 1.5,
       }),
     });
-    layerSidoShp.setStyle(s);
-    layerWorldShp.setStyle(s);
-    layerAsiaShp.setStyle(s);
+    layersRef.current.layerAsiaShp.setStyle(s);
   }, [style.shpColor]);
 
   /** polygonData/settings.polygonMode 변경 시 모델링 농도장 폴리곤 다시 그리기 */

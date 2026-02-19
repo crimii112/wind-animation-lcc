@@ -58,7 +58,7 @@ const MapProvider = ({ id, children }) => {
       center: center,
       zoom: 7.8,
       maxZoom: 13,
-      minZoom: 5.5,
+      minZoom: 5,
     });
 
     const map = new OlMap({

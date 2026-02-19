@@ -10,7 +10,6 @@ export const LccProvider = ({ children }) => {
     bgPoll: 'WIND',
     arrowGap: 3,
     polygonMode: 'single',
-    boundaryType: 'sido',
   });
 
   const [style, setStyle] = useState({

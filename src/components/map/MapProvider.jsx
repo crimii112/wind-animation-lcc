@@ -273,6 +273,7 @@ const MapProvider = ({ id, children }) => {
     if (!mapObj || !mapObj?.ol_uid) return;
 
     const view = mapObj.getView();
+
     view.animate({
       zoom: settings.zoom,
       duration: 500,

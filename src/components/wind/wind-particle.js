@@ -1,5 +1,5 @@
 export default class WindParticle {
-  constructor(item, color = '#1480FE') {
+  constructor(item, color = '#1480FE', thicknessMultiplier = 1) {
     this.lon = item.lon;
     this.lat = item.lat;
     this.wd = item.wd;
@@ -11,7 +11,9 @@ export default class WindParticle {
     // 풍속 기반 속도, 길이, 두께 설정
     this.speedFactor = this.ws < 5 ? 0.5 : this.ws < 10 ? 0.75 : 1.0;
     this.length = this.ws < 3 ? 10 : this.ws < 6 ? 16 : this.ws < 10 ? 22 : 30;
-    this.thickness = this.ws < 3 ? 1 : this.ws < 6 ? 2 : 3;
+
+    const baseThickness = this.ws < 3 ? 1 : this.ws < 6 ? 2 : 3;
+    this.thickness = baseThickness * thicknessMultiplier;
 
     this.reset(true);
   }
@@ -22,7 +24,7 @@ export default class WindParticle {
   }
 
   update() {
-    this.progress += 0.008 * this.speedFactor; // 이동 속도 조절
+    this.progress += 0.03 * this.speedFactor; // 이동 속도 조절
     if (this.progress > 1) this.reset();
 
     if (this.progress < 0.25) this.opacity = this.progress / 0.25;

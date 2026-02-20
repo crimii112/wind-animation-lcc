@@ -1,7 +1,14 @@
 import WindGL from './wind-gl';
 
 export class WebGLWindOLAnimator {
-  constructor({ map, extentLCC, windData, scalarData = null, poll = 'WIND' }) {
+  constructor({
+    map,
+    extentLCC,
+    windData,
+    scalarData = null,
+    poll = 'WIND',
+    lineWidth,
+  }) {
     this.map = map;
     this.extentLCC = extentLCC;
 
@@ -30,6 +37,9 @@ export class WebGLWindOLAnimator {
 
     this.wind.setColorMode(poll);
     this.wind.setColorRampByPoll(poll);
+
+    this.lineWidth = lineWidth;
+    this.wind.setPointSize(this.lineWidth);
 
     this._running = true;
     this._bind();

@@ -145,7 +145,7 @@ function buildColorRampFromRanges(ranges) {
 }
 
 const drawVert =
-  "precision mediump float;\n\nattribute float a_index;\n\nuniform sampler2D u_particles;\nuniform float u_particles_res;\n\nvarying vec2 v_particle_pos;\n\nvoid main() {\n    vec4 color = texture2D(u_particles, vec2(\n        fract(a_index / u_particles_res),\n        floor(a_index / u_particles_res) / u_particles_res));\n\n    // decode current particle position from the pixel's RGBA value\n    v_particle_pos = vec2(\n        color.r / 255.0 + color.b,\n        color.g / 255.0 + color.a);\n\n    gl_PointSize = 1.0;\n    gl_Position = vec4(2.0 * v_particle_pos.x - 1.0, 1.0 - 2.0 * v_particle_pos.y, 0, 1);\n}\n";
+  "precision mediump float;\n\nattribute float a_index;\n\nuniform sampler2D u_particles;\nuniform float u_particles_res;\n\nuniform float u_point_size;\n\nvarying vec2 v_particle_pos;\n\nvoid main() {\n    vec4 color = texture2D(u_particles, vec2(\n        fract(a_index / u_particles_res),\n        floor(a_index / u_particles_res) / u_particles_res));\n\n    // decode current particle position from the pixel's RGBA value\n    v_particle_pos = vec2(\n        color.r / 255.0 + color.b,\n        color.g / 255.0 + color.a);\n\n    gl_PointSize = u_point_size;\n    gl_Position = vec4(2.0 * v_particle_pos.x - 1.0, 1.0 - 2.0 * v_particle_pos.y, 0, 1);\n}\n";
 
 // const drawFrag =
 //   'precision mediump float;\n\nuniform sampler2D u_wind;\nuniform sampler2D u_scalar;\nuniform vec2 u_wind_min;\nuniform vec2 u_wind_max;\nuniform sampler2D u_color_ramp;\n\nvarying vec2 v_particle_pos;\n\nvoid main() {\n    vec2 velocity = mix(u_wind_min, u_wind_max, texture2D(u_wind, v_particle_pos).rg);\n    float speed_t = length(velocity) / length(u_wind_max);\n\n    // color ramp is encoded in a 16x16 texture\n    vec2 ramp_pos = vec2(\n        fract(16.0 * speed_t),\n        floor(16.0 * speed_t) / 16.0);\n\n    gl_FragColor = texture2D(u_color_ramp, ramp_pos);\n}\n';
@@ -185,6 +185,7 @@ class WindGL {
     this.speedFactor = 0.2; // how fast the particles move
     this.dropRate = 0.003; // how often the particles move to a random place
     this.dropRateBump = 0.01; // drop rate increase relative to individual particle speed
+    this.pointSize = 1.0;
 
     this.drawProgram = createProgram(gl, drawVert, drawFrag);
     this.screenProgram = createProgram(gl, quadVert, screenFrag);
@@ -219,6 +220,10 @@ class WindGL {
       gl.canvas.width,
       gl.canvas.height,
     );
+  }
+
+  setPointSize(size) {
+    this.pointSize = size;
   }
 
   setColorRamp(colors) {
@@ -306,8 +311,7 @@ class WindGL {
   }
 
   setColorMode(poll) {
-    this.colorMode =
-      poll !== 'WIND' && !!this.scalarData && !!this.scalarTexture ? 1 : 0;
+    this.colorMode = !!this.scalarData && !!this.scalarTexture ? 1 : 0;
   }
 
   draw() {
@@ -384,6 +388,7 @@ class WindGL {
     gl.uniform2f(program.u_wind_max, this.windData.uMax, this.windData.vMax);
 
     gl.uniform1i(program.u_color_mode, this.colorMode);
+    gl.uniform1f(program.u_point_size, this.pointSize);
 
     gl.drawArrays(gl.POINTS, 0, this._numParticles);
   }

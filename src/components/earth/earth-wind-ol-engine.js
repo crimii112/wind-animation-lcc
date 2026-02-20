@@ -137,7 +137,15 @@ function buildFieldForViewport({
   };
 
   // 픽셀 이동량 스케일 정의
-  const velocityScale = bounds.height * velocityScaleFactor * speedScale; // 이 값이 너무 작으면 점처럼 보임
+  const resolution = map.getView().getResolution();
+
+  if (!map.__baseResolution) {
+    map.__baseResolution = resolution;
+  }
+  const zoomFactor = map.__baseResolution / resolution;
+  const velocityScale =
+    bounds.height * velocityScaleFactor * speedScale * zoomFactor; // 화면 크기에 따라 이동량 조절, zoomFactor 추가하여 줌 레벨에 따라 이동량 조절
+  // const velocityScale = bounds.height * velocityScaleFactor * speedScale; // 이 값이 너무 작으면 점처럼 보임
   const NULL_WIND = Object.freeze([NaN, NaN, null]);
 
   // ol 뷰 좌표계
@@ -219,12 +227,14 @@ export class EarthWindOLAnimator {
     grid,
     maxIntensity = 17, // 색상 버킷 스케일 상한
     color = '#ffffff',
+    lineWidth = 1.5,
   }) {
     this.map = map;
     this.layer = layer;
     this.grid = grid;
     this.maxIntensity = maxIntensity;
     this.color = color;
+    this.lineWidth = lineWidth;
 
     this._pixelRatio = 1;
 
@@ -423,7 +433,8 @@ export class EarthWindOLAnimator {
     }
 
     // 점 -> 선으로 그리기
-    g.lineWidth = PARTICLE_LINE_WIDTH;
+    // g.lineWidth = PARTICLE_LINE_WIDTH;
+    g.lineWidth = this.lineWidth;
 
     for (let i = 0; i < this._buckets.length; i++) {
       const bucket = this._buckets[i];

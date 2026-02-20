@@ -37,8 +37,10 @@ import { usePolygonOverlay } from '@/hooks/usePolygonOverlay';
  */
 function Lcc({ mapId, SetMap }) {
   const GRID_KM_MAP_CONFIG = {
-    9: { center: [131338, -219484], zoom: 7.8 },
-    27: { center: [-121523, -46962], zoom: 5 },
+    // 9: { center: [131338, -219484], zoom: 7.8 },
+    // 27: { center: [-121523, -46962], zoom: 5.5 },
+    9: { center: [34980, -215509], zoom: 7.8 },
+    27: { center: [-538459, -25084], zoom: 5.5 },
   };
 
   const map = useContext(MapContext);
@@ -141,6 +143,8 @@ function Lcc({ mapId, SetMap }) {
   /** LCC(농도 폴리곤 + 바람 화살표) 데이터 로드 */
   useEffect(() => {
     if (!map?.ol_uid) return;
+
+    setPolygonData(null);
 
     const load = async () => {
       const { sourceConcPolygon, sourceWindArrows, sourceGrid } =
@@ -338,12 +342,12 @@ function Lcc({ mapId, SetMap }) {
     const { sourceConcPolygon } = layersRef.current;
     sourceConcPolygon.clear();
 
-    if (!polygonData || !settings.bgPoll) return;
+    if (!polygonData) return;
 
     sourceConcPolygon.addFeatures(
       createPolygonFeatures(polygonData, settings, halfCell, RGBA_RANGES),
     );
-  }, [polygonData, settings.bgPoll, settings.polygonMode, halfCell]);
+  }, [polygonData, settings.polygonMode, halfCell]);
 
   useEffect(() => {
     if (!map?.ol_uid) return;
@@ -354,9 +358,9 @@ function Lcc({ mapId, SetMap }) {
   /** windData 변경 시 particle 객체 재생성(색상 반영) */
   useEffect(() => {
     windParticlesRef.current = windData.map(
-      item => new WindParticle(item, style.windColor),
+      item => new WindParticle(item, style.windColor, style.windLineWidth),
     );
-  }, [windData, style.windColor]);
+  }, [windData, style.windColor, style.windLineWidth]);
 
   /** 바람장 애니메이션 루프 */
   useEffect(() => {
@@ -434,6 +438,7 @@ function Lcc({ mapId, SetMap }) {
       grid,
       maxIntensity: 17 * particleMultiplier,
       color: style.earthWindColor,
+      lineWidth: style.earthWindLineWidth ?? 1.5,
     });
 
     const onPostRender = e => {
@@ -467,7 +472,13 @@ function Lcc({ mapId, SetMap }) {
       animator.stop();
       earthWindAnimatorRef.current = null;
     };
-  }, [map?.ol_uid, layerVisible.earthWind, earthData, style.earthWindColor]);
+  }, [
+    map?.ol_uid,
+    layerVisible.earthWind,
+    earthData,
+    style.earthWindColor,
+    style.earthWindLineWidth,
+  ]);
 
   /** Earth 농도장 렌더링 */
   useEffect(() => {
@@ -559,6 +570,7 @@ function Lcc({ mapId, SetMap }) {
           ? { image: concImg, min: webGLData.conc.min, max: webGLData.conc.max }
           : null,
         poll: webGLData.poll,
+        lineWidth: style.webglWindLineWidth,
       });
     };
 
@@ -569,24 +581,36 @@ function Lcc({ mapId, SetMap }) {
       webglWindAnimatorRef.current?.destroy();
       webglWindAnimatorRef.current = null;
     };
-  }, [map?.ol_uid, webGLData, layerVisible.webglWind]);
+  }, [
+    map?.ol_uid,
+    webGLData,
+    layerVisible.webglWind,
+    style.webglWindLineWidth,
+  ]);
 
   return (
-    <MapDiv id={mapId}>
-      <LccMapControlPanel
-        datetime={datetimeTxt}
-        segments={EARTH_SEGMENTS_MAP[settings.bgPoll]}
-        scaleMeta={EARTH_SCALE_META[settings.bgPoll]}
-      />
-      {settings.bgPoll && (
-        <LccLegend
-          title={POLL_META[settings.bgPoll].title}
-          rgbs={RGBA_RANGES[settings.bgPoll]}
-          unit={POLL_META[settings.bgPoll].unit}
-          precision={POLL_META[settings.bgPoll].precision}
-          wsLegendOn={layerVisible.windArrows}
-        />
-      )}
+    <MapDiv>
+      <div id="map-capture-area" className="capture-wrapper">
+        <div id={mapId} className="map-core" />
+
+        {settings.bgPoll && (
+          <LccLegend
+            title={POLL_META[settings.bgPoll].title}
+            rgbs={RGBA_RANGES[settings.bgPoll]}
+            unit={POLL_META[settings.bgPoll].unit}
+            precision={POLL_META[settings.bgPoll].precision}
+            wsLegendOn={layerVisible.windArrows}
+          />
+        )}
+
+        <div className="panel-exclude">
+          <LccMapControlPanel
+            datetime={datetimeTxt}
+            segments={EARTH_SEGMENTS_MAP[settings.bgPoll]}
+            scaleMeta={EARTH_SCALE_META[settings.bgPoll]}
+          />
+        </div>
+      </div>
     </MapDiv>
   );
 }
@@ -610,18 +634,22 @@ const MapDiv = styled.div`
   height: 100vh;
   position: relative;
 
-  .ol-tooltip::after {
-    content: '';
+  .capture-wrapper {
+    width: 100%;
+    height: 100%;
+    position: relative;
+  }
+
+  .map-core {
+    width: 100%;
+    height: 100%;
+    background: #fff;
+  }
+
+  .panel-exclude {
     position: absolute;
-    left: 50%;
-    bottom: -6px;
-    transform: translateX(-50%);
-
-    width: 0;
-    height: 0;
-
-    border-left: 6px solid transparent;
-    border-right: 6px solid transparent;
-    border-top: 6px solid rgba(255, 255, 255, 0.95);
+    top: 0;
+    left: 0;
+    z-index: 9999;
   }
 `;

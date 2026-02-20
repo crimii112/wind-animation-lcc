@@ -7,17 +7,17 @@ import { LccProvider } from '@/components/lcc/LccContext';
 function App() {
   return (
     <BrowserRouter basename={import.meta.env.PROD ? '/wal' : undefined}>
-      <div className="">
+      <div id="fullscreen-area">
         <Routes>
           <Route
             path="/"
             element={
               <div className="flex flex-col w-screen h-screen">
-                <MapProvider id="LccOverlayTest">
-                  <LccProvider>
+                <LccProvider>
+                  <MapProvider id="LccOverlayTest">
                     <Lcc mapId="LccOverlayTest" />
-                  </LccProvider>
-                </MapProvider>
+                  </MapProvider>
+                </LccProvider>
               </div>
             }
           />

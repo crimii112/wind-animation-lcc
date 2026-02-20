@@ -10,6 +10,7 @@ export const LccProvider = ({ children }) => {
     bgPoll: 'WIND',
     arrowGap: 3,
     polygonMode: 'single',
+    zoom: 7.8,
   });
 
   const [style, setStyle] = useState({
@@ -19,7 +20,10 @@ export const LccProvider = ({ children }) => {
     shpOpacity: 1.0,
     arrowColor: '#FFFF00',
     windColor: '#1480FE',
+    windLineWidth: 1,
     earthWindColor: '#ffffff',
+    earthWindLineWidth: 1.5,
+    webglWindLineWidth: 1.0,
     shpColor: '#000000',
   });
 

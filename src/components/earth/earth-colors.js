@@ -13,7 +13,7 @@ export const RGBA_RANGES = {
     { min: 6.0, max: 7.0, color: 'rgba(253, 174, 97, 1)' },
     { min: 7.0, max: 8.0, color: 'rgba(244, 109, 67, 1)' },
     { min: 8.0, max: 9.0, color: 'rgba(220, 80, 60, 1)' },
-    { min: 9.0, max: 10.0, color: 'rgba(213, 62, 79, 1)' },
+    { min: 9.0, max: Infinity, color: 'rgba(213, 62, 79, 1)' },
   ],
   CAI: [
     { min: 0, max: 51, color: 'rgba(92, 140, 221, 1)' },

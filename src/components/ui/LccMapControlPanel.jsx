@@ -416,7 +416,7 @@ const LccMapControlPanel = ({ datetime, segments, scaleMeta }) => {
       </LayerToggle>
 
       <SectionBox title="기타">
-        <LayerToggle
+        {/* <LayerToggle
           label="지도 Zoom"
           checked={true}
           onChange={() => {}}
@@ -434,7 +434,7 @@ const LccMapControlPanel = ({ datetime, segments, scaleMeta }) => {
             />
             <span className="value-text">{settings.zoom}</span>
           </SubRow>
-        </LayerToggle>
+        </LayerToggle> */}
         <LayerToggle
           label="국가 경계"
           checked={layerVisible.shp}

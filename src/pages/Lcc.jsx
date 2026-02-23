@@ -326,6 +326,14 @@ function Lcc({ mapId, SetMap }) {
     });
   }, [style.arrowColor, settings.arrowGap]);
 
+  /** Earth 바람장 스타일(색상, 선 두께) 반영 */
+  useEffect(() => {
+    earthWindAnimatorRef.current?.setStyle({
+      color: style.earthWindColor,
+      lineWidth: style.earthWindLineWidth ?? 1.5,
+    });
+  }, [style.earthWindColor, style.earthWindLineWidth]);
+
   /** 경계 스타일(색상) 반영 */
   useEffect(() => {
     const s = new Style({
@@ -405,6 +413,7 @@ function Lcc({ mapId, SetMap }) {
 
   /** Earth 바람장 애니메이터 구동/정리 */
   const isMovingRef = useRef(false);
+  const prevZoomRef = useRef(null);
   useEffect(() => {
     if (!map?.ol_uid) return;
     if (!earthData || earthData.length === 0) return;
@@ -428,6 +437,7 @@ function Lcc({ mapId, SetMap }) {
     }
 
     const zoom = map.getView().getZoom();
+    prevZoomRef.current = zoom;
 
     const particleMultiplier = zoom >= 9 ? 0.5 : zoom >= 7 ? 0.7 : 1;
 
@@ -448,14 +458,18 @@ function Lcc({ mapId, SetMap }) {
 
     const onMoveStart = () => {
       isMovingRef.current = true;
+
+      const currentZoom = map.getView().getZoom();
+      if (currentZoom !== prevZoomRef.current) {
+        animator.rebuildField();
+        prevZoomRef.current = currentZoom;
+      }
       animator.clearTrails();
-      layer.changed();
     };
 
     const onMoveEnd = () => {
       isMovingRef.current = false;
       animator.rebuildField();
-      layer.changed();
     };
 
     layer.on('postrender', onPostRender);
@@ -472,13 +486,7 @@ function Lcc({ mapId, SetMap }) {
       animator.stop();
       earthWindAnimatorRef.current = null;
     };
-  }, [
-    map?.ol_uid,
-    layerVisible.earthWind,
-    earthData,
-    style.earthWindColor,
-    style.earthWindLineWidth,
-  ]);
+  }, [map?.ol_uid, layerVisible.earthWind, earthData]);
 
   /** Earth 농도장 렌더링 */
   useEffect(() => {

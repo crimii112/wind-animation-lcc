@@ -1,7 +1,7 @@
 const INTENSITY_SCALE_STEP = 2;
 const MAX_PARTICLE_AGE = 100;
 const PARTICLE_LINE_WIDTH = 1.5;
-const FRAME_RATE_MS = 20;
+const FRAME_RATE_MS = 33;
 
 /** 그라데이션 */
 function windIntensityColorScale(step, maxWind, baseColor) {
@@ -142,7 +142,8 @@ function buildFieldForViewport({
   if (!map.__baseResolution) {
     map.__baseResolution = resolution;
   }
-  const zoomFactor = map.__baseResolution / resolution;
+  const rawZoomFactor = Math.sqrt(map.__baseResolution / resolution);
+  const zoomFactor = Math.min(rawZoomFactor, 1.5);
   const velocityScale =
     bounds.height * velocityScaleFactor * speedScale * zoomFactor; // 화면 크기에 따라 이동량 조절, zoomFactor 추가하여 줌 레벨에 따라 이동량 조절
   // const velocityScale = bounds.height * velocityScaleFactor * speedScale; // 이 값이 너무 작으면 점처럼 보임
@@ -240,7 +241,14 @@ export class EarthWindOLAnimator {
 
     const dx = grid.header.dx;
     this.velocityScaleFactor = dx === 27000 ? 1 / 60000 : 1 / 30000;
-    this.particleMultiplier = dx === 27000 ? 0.005 : 0.003;
+
+    const zoom = this.map.getView().getZoom();
+    let densityFactor;
+    if (zoom >= 10) densityFactor = 0.15;
+    else if (zoom >= 9) densityFactor = 0.3;
+    else if (zoom >= 8) densityFactor = 0.5;
+    else densityFactor = 1.0;
+    this.particleMultiplier = (dx === 27000 ? 0.003 : 0.0015) * densityFactor;
 
     // 바람 세기에 따라 어떤 색을 쓸지 배열 생성
     this._colorStyles = windIntensityColorScale(
@@ -306,12 +314,13 @@ export class EarthWindOLAnimator {
   rebuildField() {
     this._ensureCanvasSize();
 
+    const zoom = this.map.getView().getZoom();
+
     // 전체 픽셀 바람 방향 미리 계산
     this._field = buildFieldForViewport({
       map: this.map,
       grid: this.grid,
       velocityScaleFactor: this.velocityScaleFactor,
-
       step: 2,
       speedScale: 10.0,
       flipY: true,
@@ -323,7 +332,7 @@ export class EarthWindOLAnimator {
     const bounds = this._field._bounds;
 
     const particleCount = Math.round(
-      bounds.width * bounds.height * this.particleMultiplier,
+      bounds.width * bounds.height * this.particleMultiplier * 0.6,
     );
 
     this._particles = new Array(particleCount);
@@ -415,8 +424,15 @@ export class EarthWindOLAnimator {
         }
       } else {
         // 바람있을때 -> 다음 위치 계산
-        const xt = x + v[0];
-        const yt = y + v[1];
+        // const xt = x + v[0];
+        // const yt = y + v[1];
+
+        const maxStep = 4; // 최대 이동 제한
+        const dx = Math.max(-maxStep, Math.min(maxStep, v[0]));
+        const dy = Math.max(-maxStep, Math.min(maxStep, v[1]));
+
+        const xt = x + dx;
+        const yt = y + dy;
 
         if (field.isDefined(xt, yt)) {
           p.xt = xt;
@@ -469,5 +485,18 @@ export class EarthWindOLAnimator {
       this._trailCanvas.width,
       this._trailCanvas.height,
     );
+  }
+
+  setStyle({ color, lineWidth }) {
+    if (color) {
+      this.color = color;
+      this._colorStyles = windIntensityColorScale(
+        INTENSITY_SCALE_STEP,
+        this.maxIntensity,
+        this.color,
+      );
+      this._buckets = this._colorStyles.map(() => []);
+    }
+    if (lineWidth !== undefined) this.lineWidth = lineWidth;
   }
 }

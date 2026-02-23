@@ -49,12 +49,20 @@ export function usePolygonOverlay({
         return;
       }
 
-      const pixel = map.getEventPixel(e.originalEvent);
+      const coord = e.coordinate;
 
-      const feature = map.forEachFeatureAtPixel(pixel, f => f, {
-        hitTolerance: 2,
-        layerFilter: layer => layer === layersRef.current.layerConcPolygon,
-      });
+      const source = layersRef.current.layerConcPolygon.getSource();
+      const features = source.getFeatures();
+
+      let feature = null;
+
+      for (const f of features) {
+        const geom = f.getGeometry();
+        if (geom && geom.intersectsCoordinate(coord)) {
+          feature = f;
+          break;
+        }
+      }
 
       if (!feature) {
         overlay.setPosition(undefined);
@@ -63,13 +71,44 @@ export function usePolygonOverlay({
 
       const overlayTxt = feature.get('overlay');
 
-      if (overlayTxt != null && overlayTxt !== '') {
+      if (overlayTxt) {
         el.innerText = overlayTxt;
-        overlay.setPosition(e.coordinate);
+        overlay.setPosition(coord);
       } else {
         overlay.setPosition(undefined);
       }
     };
+
+    // const handlePointerMove = e => {
+    //   const { polygonMode } = settingsRef.current;
+    //   const { concPolygon } = layerVisibleRef.current;
+
+    //   if (polygonMode !== 'single' || !concPolygon) {
+    //     overlay.setPosition(undefined);
+    //     return;
+    //   }
+
+    //   const pixel = map.getEventPixel(e.originalEvent);
+
+    //   const feature = map.forEachFeatureAtPixel(pixel, f => f, {
+    //     hitTolerance: 1,
+    //     layerFilter: layer => layer === layersRef.current.layerConcPolygon,
+    //   });
+
+    //   if (!feature) {
+    //     overlay.setPosition(undefined);
+    //     return;
+    //   }
+
+    //   const overlayTxt = feature.get('overlay');
+
+    //   if (overlayTxt != null && overlayTxt !== '') {
+    //     el.innerText = overlayTxt;
+    //     overlay.setPosition(e.coordinate);
+    //   } else {
+    //     overlay.setPosition(undefined);
+    //   }
+    // };
 
     const handleMouseLeave = () => {
       overlay.setPosition(undefined);

@@ -22,7 +22,10 @@ export class WebGLWindOLAnimator {
     );
     viewport.insertBefore(this.canvas, overlayContainer);
 
-    const gl = this.canvas.getContext('webgl', { antialias: false });
+    const gl = this.canvas.getContext('webgl', {
+      antialias: false,
+      preserveDrawingBuffer: true,
+    });
     this.wind = new WindGL(gl);
 
     // particle 수
@@ -95,13 +98,15 @@ export class WebGLWindOLAnimator {
 
     const left = minPx[0];
     const top = minPx[1];
-    const width = maxPx[0] - minPx[0];
-    const height = maxPx[1] - minPx[1];
+    const width = Math.floor(maxPx[0] - minPx[0]);
+    const height = Math.floor(maxPx[1] - minPx[1]);
+
+    if (width < 2 || height < 2) return;
 
     this.canvas.style.left = `${left}px`;
     this.canvas.style.top = `${top}px`;
-    this.canvas.width = Math.max(1, width);
-    this.canvas.height = Math.max(1, height);
+    this.canvas.width = Math.max(2, width);
+    this.canvas.height = Math.max(2, height);
 
     this.wind.resize();
   }

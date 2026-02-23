@@ -72,12 +72,13 @@ const MapProvider = ({ id, children }) => {
     });
 
     const map = new OlMap({
-      controls: defaultControls({ zoom: false, rotate: false }).extend([
-        new Zoom({
-          className: 'custom-zoom-control',
-          delta: 0.5,
-        }),
-      ]),
+      controls: defaultControls({ zoom: false, rotate: false }),
+      // .extend([
+      //   new Zoom({
+      //     className: 'custom-zoom-control',
+      //     delta: 0.5,
+      //   }),
+      // ]),
       interactions: defaultInteractions().extend([new DblClickDragZoom()]),
       layers: [osmLayer, ...Object.values(vworldLayers)],
       view,
@@ -166,6 +167,51 @@ const MapProvider = ({ id, children }) => {
     });
 
     map.addControl(mapTypeControl);
+
+    /** 지도 zoom control */
+    const zoomContainer = document.createElement('div');
+    zoomContainer.className = 'custom-zoom-control';
+
+    const zoomInBtn = document.createElement('button');
+    zoomInBtn.innerText = '+';
+
+    const zoomOutBtn = document.createElement('button');
+    zoomOutBtn.innerText = '-';
+
+    zoomInBtn.onclick = () => {
+      const delta = parseFloat(zoomInput.value) || 0.5;
+      const view = map.getView();
+      view.animate({
+        zoom: view.getZoom() + delta,
+        duration: 200,
+      });
+    };
+
+    zoomOutBtn.onclick = () => {
+      const delta = parseFloat(zoomInput.value) || 0.5;
+      const view = map.getView();
+      view.animate({
+        zoom: view.getZoom() - delta,
+        duration: 200,
+      });
+    };
+
+    const zoomInput = document.createElement('input');
+    zoomInput.type = 'number';
+    zoomInput.step = '0.1';
+    zoomInput.value = '0.5';
+    zoomInput.style.height = '28px';
+    zoomInput.style.textAlign = 'center';
+
+    zoomContainer.appendChild(zoomInBtn);
+    zoomContainer.appendChild(zoomInput);
+    zoomContainer.appendChild(zoomOutBtn);
+
+    const zoomControl = new Control({
+      element: zoomContainer,
+    });
+
+    map.addControl(zoomControl);
 
     /** 지도 png 다운로드 control */
     const downloadBtn = document.createElement('button');
@@ -262,6 +308,8 @@ const MapProvider = ({ id, children }) => {
       toggleBtnRef.current.disabled = true;
       toggleBtnRef.current.style.opacity = 0.5;
       toggleBtnRef.current.style.cursor = 'not-allowed';
+
+      currentTypeRef.current = 'Base';
     } else {
       toggleBtnRef.current.disabled = false;
       toggleBtnRef.current.style.opacity = 1;
@@ -397,15 +445,49 @@ const MapDiv = styled.div`
     font-size: 18px;
     font-weight: 600;
     cursor: pointer;
+
+    transition: background 0.15s ease;
   }
 
   .custom-zoom-control button:hover {
     background: #f2f2f2;
   }
 
+  .custom-zoom-control input {
+    width: 100%;
+    height: 28px;
+
+    border: none;
+    outline: none;
+
+    text-align: center;
+    font-size: 12px;
+    font-weight: 500;
+
+    background: rgba(255, 255, 255, 0.8);
+
+    color: #333;
+
+    border-top: 1px solid #e5e7eb;
+    border-bottom: 1px solid #e5e7eb;
+
+    transition: background 0.2s ease;
+  }
+
+  /* number input 스핀 제거 */
+  .custom-zoom-control input::-webkit-outer-spin-button,
+  .custom-zoom-control input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  .custom-zoom-control input[type='number'] {
+    -moz-appearance: textfield;
+  }
+
   .map-download-btn {
     position: absolute;
-    top: 140px; /* zoom 아래 */
+    top: 168px; /* zoom 아래 */
     right: 12px;
 
     width: 36px;
@@ -435,7 +517,7 @@ const MapDiv = styled.div`
 
   .map-fullscreen-btn {
     position: absolute;
-    top: 190px; /* 다운로드 버튼 아래 */
+    top: 216px; /* 다운로드 버튼 아래 */
     right: 12px;
 
     width: 36px;

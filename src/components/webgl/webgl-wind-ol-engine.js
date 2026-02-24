@@ -26,7 +26,7 @@ export class WebGLWindOLAnimator {
       antialias: false,
       preserveDrawingBuffer: true,
     });
-    this.wind = new WindGL(gl);
+    this.wind = new WindGL(gl, map, extentLCC);
 
     // particle 수
     const particleMultiplier = windData.gridKm === '9' ? 1.3 : 0.9;
@@ -56,13 +56,18 @@ export class WebGLWindOLAnimator {
         cancelAnimationFrame(this._rafId);
         this._rafId = null;
       }
+      const gl = this.wind.gl;
 
-      this.canvas.style.display = 'none';
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
     };
 
     this._onMoveEnd = () => {
       this.updateCanvas();
-      this.canvas.style.display = 'block';
+      this.wind.resize();
 
       this._running = true;
       this._rafId = requestAnimationFrame(this._loop);
@@ -83,30 +88,53 @@ export class WebGLWindOLAnimator {
   };
 
   updateCanvas() {
-    const view = this.map.getView();
     const size = this.map.getSize();
     if (!size) return;
 
-    this.canvas.width = size[0];
-    this.canvas.height = size[1];
+    // 항상 지도 전체를 덮음
     this.canvas.style.left = '0px';
     this.canvas.style.top = '0px';
 
-    const extentLCC = this.extentLCC;
-    const minPx = this.map.getPixelFromCoordinate([extentLCC[0], extentLCC[3]]);
-    const maxPx = this.map.getPixelFromCoordinate([extentLCC[2], extentLCC[1]]);
+    this.canvas.width = size[0];
+    this.canvas.height = size[1];
 
-    const left = minPx[0];
-    const top = minPx[1];
-    const width = Math.floor(maxPx[0] - minPx[0]);
-    const height = Math.floor(maxPx[1] - minPx[1]);
+    const zoom = this.map.getView().getZoom();
+    console.log('zoom: ', zoom);
+    const resolution = this.map.getView().getResolution();
+    console.log('resolution: ', resolution);
 
-    if (width < 2 || height < 2) return;
+    // zoom 기반 particle 개수 증가
+    const screenArea = size[0] * size[1];
 
-    this.canvas.style.left = `${left}px`;
-    this.canvas.style.top = `${top}px`;
-    this.canvas.width = Math.max(2, width);
-    this.canvas.height = Math.max(2, height);
+    let density = 0.002;
+    if (zoom >= 12) density = 0.008;
+    else if (zoom >= 11) density = 0.006;
+    else if (zoom >= 10) density = 0.004;
+
+    const maxParticles = 200000;
+    const newCount = Math.min(screenArea * density, maxParticles);
+    this.wind.numParticles = newCount;
+
+    console.log('newCount:', newCount);
+
+    // zoom 기반 pointSize 증가
+    let pointSize = 1.0;
+
+    if (zoom >= 11) pointSize = 2.6;
+    else if (zoom >= 10) pointSize = 2.3;
+    else if (zoom >= 9) pointSize = 1.8;
+    else if (zoom >= 8) pointSize = 1.5;
+
+    this.wind.setPointSize(pointSize);
+    console.log('pointSize: ', pointSize);
+
+    // resolution 기반 speedFactor 감소
+    const baseResolution = 180;
+    const baseSpeed = 0.15;
+
+    const speed = baseSpeed * Math.sqrt(resolution / baseResolution);
+    this.wind.setSpeedFactor(speed);
+    console.log('speedFactor: ', speed);
 
     this.wind.resize();
   }

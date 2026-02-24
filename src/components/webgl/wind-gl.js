@@ -161,8 +161,10 @@ const DEFAULT_RAMP = {
 };
 
 class WindGL {
-  constructor(gl) {
+  constructor(gl, map, extentLCC) {
     this.gl = gl;
+    this.map = map;
+    this.extentLCC = extentLCC;
 
     this.colorMode = 0; // 0: wind, 1: scalar
 
@@ -208,6 +210,10 @@ class WindGL {
       gl.canvas.width,
       gl.canvas.height,
     );
+  }
+
+  setSpeedFactor(f) {
+    this.speedFactor = f;
   }
 
   setPointSize(size) {
@@ -327,6 +333,11 @@ class WindGL {
     this.drawParticles();
 
     bindFramebuffer(gl, null);
+    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
     // enable blending to support drawing on top of an existing background (e.g. a map)
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
@@ -378,6 +389,25 @@ class WindGL {
     gl.uniform1i(program.u_color_mode, this.colorMode);
     gl.uniform1f(program.u_point_size, this.pointSize);
 
+    // 지도 관련 uniform
+    const view = this.map.getView();
+    const center = view.getCenter();
+    const resolution = view.getResolution();
+    const canvas = this.gl.canvas;
+
+    const minX = this.extentLCC[0];
+    const minY = this.extentLCC[1];
+    const maxX = this.extentLCC[2];
+    const maxY = this.extentLCC[3];
+
+    gl.uniform2f(program.u_extent_min, minX, minY);
+    gl.uniform2f(program.u_extent_max, maxX, maxY);
+
+    gl.uniform2f(program.u_map_center, center[0], center[1]);
+    gl.uniform1f(program.u_resolution, resolution);
+
+    gl.uniform2f(program.u_canvas_size, canvas.width, canvas.height);
+
     gl.drawArrays(gl.POINTS, 0, this._numParticles);
   }
 
@@ -413,6 +443,49 @@ class WindGL {
       this.particleStateTexture1,
       this.particleStateTexture0,
     ];
+  }
+
+  resetParticles() {
+    const gl = this.gl;
+
+    const particleRes = this.particleStateResolution;
+    const particleState = new Uint8Array(this._numParticles * 4);
+
+    for (let i = 0; i < particleState.length; i++) {
+      particleState[i] = Math.floor(Math.random() * 255);
+    }
+
+    this.particleStateTexture0 = createTexture(
+      gl,
+      gl.NEAREST,
+      particleState,
+      particleRes,
+      particleRes,
+    );
+
+    this.particleStateTexture1 = createTexture(
+      gl,
+      gl.NEAREST,
+      particleState,
+      particleRes,
+      particleRes,
+    );
+  }
+
+  clearTrails() {
+    const gl = this.gl;
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
+
+    bindFramebuffer(gl, this.framebuffer, this.backgroundTexture);
+    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    bindFramebuffer(gl, this.framebuffer, this.screenTexture);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   }
 }
 

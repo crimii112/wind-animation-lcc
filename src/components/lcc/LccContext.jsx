@@ -29,12 +29,12 @@ export const LccProvider = ({ children }) => {
 
   const [layerVisible, setLayerVisible] = useState({
     shp: true,
-    concPolygon: false,
+    concPolygon: true,
     windArrows: false,
     windAnimation: false,
-    earthWind: false,
+    earthWind: true,
     earthScalar: false,
-    webglWind: true,
+    webglWind: false,
     grid: false,
   });
 

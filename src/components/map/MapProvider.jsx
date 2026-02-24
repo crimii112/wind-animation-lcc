@@ -224,27 +224,38 @@ const MapProvider = ({ id, children }) => {
 
       // 패널 숨기기
       const panel = captureTarget.querySelector('.panel-exclude');
-      if (panel) panel.style.display = 'none';
-
       // control 숨기기
       const controls = captureTarget.querySelectorAll(
-        '.ol-control, .custom-maptype-wrapper, .map-download-btn, .map-fullscreen-btn',
+        '.ol-control, .custom-maptype-wrapper, .custom-zoom-control, .map-download-btn, .map-fullscreen-btn',
       );
-      controls.forEach(el => (el.style.display = 'none'));
 
-      const canvas = await html2canvas(captureTarget, {
-        useCORS: true,
-        backgroundColor: null,
-        scale: 2,
-      });
+      try {
+        if (panel) panel.style.display = 'none';
+        controls.forEach(el => (el.style.display = 'none'));
 
-      if (panel) panel.style.display = 'block';
-      controls.forEach(el => (el.style.display = ''));
+        const canvas = await html2canvas(captureTarget, {
+          useCORS: true,
+          backgroundColor: null,
+          scale: 1,
+        });
 
-      const link = document.createElement('a');
-      link.href = canvas.toDataURL('image/png');
-      link.download = `map_${Date.now()}.png`;
-      link.click();
+        canvas.toBlob(blob => {
+          if (!blob) return;
+
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `map_${Date.now()}.png`;
+          link.click();
+
+          URL.revokeObjectURL(url);
+        }, 'image/png');
+      } catch (err) {
+        console.error('지도 캡처 다운로드 실패:', err);
+      } finally {
+        if (panel) panel.style.display = 'block';
+        controls.forEach(el => (el.style.display = ''));
+      }
     };
 
     const downloadControl = new Control({

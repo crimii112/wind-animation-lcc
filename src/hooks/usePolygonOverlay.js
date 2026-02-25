@@ -73,42 +73,28 @@ export function usePolygonOverlay({
 
       if (overlayTxt) {
         el.innerText = overlayTxt;
+
+        const pixel = map.getPixelFromCoordinate(coord);
+        const mapSize = map.getSize();
+
+        if (pixel && mapSize) {
+          const [, y] = pixel;
+          const [, h] = mapSize;
+
+          if (y < 200) {
+            overlay.setPositioning('top-center');
+            overlay.setOffset([0, 10]);
+          } else {
+            overlay.setPositioning('bottom-center');
+            overlay.setOffset([0, -10]);
+          }
+        }
+
         overlay.setPosition(coord);
       } else {
         overlay.setPosition(undefined);
       }
     };
-
-    // const handlePointerMove = e => {
-    //   const { polygonMode } = settingsRef.current;
-    //   const { concPolygon } = layerVisibleRef.current;
-
-    //   if (polygonMode !== 'single' || !concPolygon) {
-    //     overlay.setPosition(undefined);
-    //     return;
-    //   }
-
-    //   const pixel = map.getEventPixel(e.originalEvent);
-
-    //   const feature = map.forEachFeatureAtPixel(pixel, f => f, {
-    //     hitTolerance: 1,
-    //     layerFilter: layer => layer === layersRef.current.layerConcPolygon,
-    //   });
-
-    //   if (!feature) {
-    //     overlay.setPosition(undefined);
-    //     return;
-    //   }
-
-    //   const overlayTxt = feature.get('overlay');
-
-    //   if (overlayTxt != null && overlayTxt !== '') {
-    //     el.innerText = overlayTxt;
-    //     overlay.setPosition(e.coordinate);
-    //   } else {
-    //     overlay.setPosition(undefined);
-    //   }
-    // };
 
     const handleMouseLeave = () => {
       overlay.setPosition(undefined);

@@ -5,8 +5,12 @@ import Lcc from '@/pages/Lcc';
 import { LccProvider } from '@/components/lcc/LccContext';
 
 function App() {
+  const basename = import.meta.env.PROD
+    ? import.meta.env.BASE_URL.replace(/\/$/, '')
+    : undefined;
+
   return (
-    <BrowserRouter basename={import.meta.env.PROD ? '/wal' : undefined}>
+    <BrowserRouter basename={basename}>
       <div id="fullscreen-area">
         <Routes>
           <Route

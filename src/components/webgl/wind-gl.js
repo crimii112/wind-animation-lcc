@@ -212,6 +212,10 @@ class WindGL {
     );
   }
 
+  setFadeOpacity(opacity) {
+    this.fadeOpacity = Math.max(0.85, Math.min(0.9995, opacity));
+  }
+
   setSpeedFactor(f) {
     this.speedFactor = f;
   }

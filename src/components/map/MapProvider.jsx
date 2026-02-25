@@ -14,7 +14,7 @@ import { OSM, XYZ } from 'ol/source';
 
 import MapContext from './MapContext';
 import { LccContext } from '@/components/lcc/LccContext';
-import { map } from 'lodash';
+import { FEATURES } from '@/config/featureFlags';
 
 proj4.defs(
   'LCC',
@@ -264,29 +264,31 @@ const MapProvider = ({ id, children }) => {
     map.addControl(downloadControl);
 
     /** 전체화면 control */
-    const fullscreenBtn = document.createElement('button');
-    fullscreenBtn.className = 'map-fullscreen-btn';
-    fullscreenBtn.innerHTML = '전체<br/>화면';
+    if (FEATURES.fullscreen) {
+      const fullscreenBtn = document.createElement('button');
+      fullscreenBtn.className = 'map-fullscreen-btn';
+      fullscreenBtn.innerHTML = '전체<br/>화면';
 
-    fullscreenBtn.onclick = () => {
-      const wrapper = document.getElementById('fullscreen-area');
-      if (!wrapper) return;
+      fullscreenBtn.onclick = () => {
+        const wrapper = document.getElementById('fullscreen-area');
+        if (!wrapper) return;
 
-      if (!document.fullscreenElement) {
-        wrapper.requestFullscreen();
-      } else {
-        document.exitFullscreen();
-      }
+        if (!document.fullscreenElement) {
+          wrapper.requestFullscreen();
+        } else {
+          document.exitFullscreen();
+        }
 
-      setTimeout(() => {
-        map.updateSize();
-      }, 100);
-    };
+        setTimeout(() => {
+          map.updateSize();
+        }, 100);
+      };
 
-    const fullscreenControl = new Control({
-      element: fullscreenBtn,
-    });
-    map.addControl(fullscreenControl);
+      const fullscreenControl = new Control({
+        element: fullscreenBtn,
+      });
+      map.addControl(fullscreenControl);
+    }
 
     setMapObj(map);
 

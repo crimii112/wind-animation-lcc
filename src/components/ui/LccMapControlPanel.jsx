@@ -10,6 +10,7 @@ import {
 
 import { LccContext } from '@/components/lcc/LccContext';
 import ColorScale from './ColorScale';
+import { FEATURES } from '@/config/featureFlags';
 
 const MIN_TSTEP = 0;
 const MAX_TSTEP = 238;
@@ -170,19 +171,21 @@ const LccMapControlPanel = ({ datetime, segments, scaleMeta }) => {
           <option value={27}>27</option>
         </select>
       </ControlRow>
-      <ControlRow>
-        <span>LAYER</span>
-        <select
-          value={settings.layer}
-          onChange={e => updateSettings('layer', Number(e.target.value))}
-        >
-          {Array.from({ length: 1 }, (_, i) => (
-            <option key={i} value={i}>
-              {i + 1}
-            </option>
-          ))}
-        </select>
-      </ControlRow>
+      {FEATURES.showLayerSelect && (
+        <ControlRow>
+          <span>LAYER</span>
+          <select
+            value={settings.layer}
+            onChange={e => updateSettings('layer', Number(e.target.value))}
+          >
+            {Array.from({ length: 1 }, (_, i) => (
+              <option key={i} value={i}>
+                {i + 1}
+              </option>
+            ))}
+          </select>
+        </ControlRow>
+      )}
       <ControlRow>
         <span>TSTEP</span>
         <select
@@ -220,16 +223,18 @@ const LccMapControlPanel = ({ datetime, segments, scaleMeta }) => {
         checked={layerVisible.concPolygon}
         onChange={v => toggleLayer('concPolygon', v)}
       >
-        <SubRow>
-          <span className="label-text">폴리곤 방식</span>
-          <select
-            value={settings.polygonMode}
-            onChange={e => updateSettings('polygonMode', e.target.value)}
-          >
-            <option value="multi">멀티 폴리곤</option>
-            <option value="single">단일 폴리곤(오버레이)</option>
-          </select>
-        </SubRow>
+        {FEATURES.showPolygonModeSelect && (
+          <SubRow>
+            <span className="label-text">폴리곤 방식</span>
+            <select
+              value={settings.polygonMode}
+              onChange={e => updateSettings('polygonMode', e.target.value)}
+            >
+              <option value="multi">멀티 폴리곤</option>
+              <option value="single">단일 폴리곤(오버레이)</option>
+            </select>
+          </SubRow>
+        )}
         <SubRow>
           <span className="label-text">투명도</span>
           <input
@@ -248,89 +253,91 @@ const LccMapControlPanel = ({ datetime, segments, scaleMeta }) => {
         </SubRow>
       </LayerToggle>
 
-      <SectionBox title="모델링 바람장">
-        <ControlRow>
-          <span>바람 간격</span>
-          <select
-            value={settings.arrowGap}
-            onChange={e => {
-              updateSettings('arrowGap', Number(e.target.value));
-            }}
+      {FEATURES.showModelingWindSection && (
+        <SectionBox title="모델링 바람장">
+          <ControlRow>
+            <span>바람 간격</span>
+            <select
+              value={settings.arrowGap}
+              onChange={e => {
+                updateSettings('arrowGap', Number(e.target.value));
+              }}
+            >
+              <option value={1}>1</option>
+              <option value={2}>2</option>
+              <option value={3}>3</option>
+              <option value={4}>4</option>
+            </select>
+          </ControlRow>
+          <LayerToggle
+            label="바람장 화살표"
+            checked={layerVisible.windArrows}
+            onChange={v => toggleLayer('windArrows', v)}
           >
-            <option value={1}>1</option>
-            <option value={2}>2</option>
-            <option value={3}>3</option>
-            <option value={4}>4</option>
-          </select>
-        </ControlRow>
-        <LayerToggle
-          label="바람장 화살표"
-          checked={layerVisible.windArrows}
-          onChange={v => toggleLayer('windArrows', v)}
-        >
-          <SubRow>
-            <span className="label-text">투명도</span>
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.1"
-              value={style.windArrowsOpacity}
-              onChange={e =>
-                updateStyle('windArrowsOpacity', Number(e.target.value))
-              }
-            />
-            <span className="value-text">
-              {Math.round(style.windArrowsOpacity * 100)}%
-            </span>
-          </SubRow>
-          <SubRow>
-            <span className="label-text">색상</span>
-            <ColorPicker>
-              <div style={{ backgroundColor: style.arrowColor }} />
+            <SubRow>
+              <span className="label-text">투명도</span>
               <input
-                type="color"
-                value={style.arrowColor}
-                onChange={e => updateStyle('arrowColor', e.target.value)}
+                type="range"
+                min="0"
+                max="1"
+                step="0.1"
+                value={style.windArrowsOpacity}
+                onChange={e =>
+                  updateStyle('windArrowsOpacity', Number(e.target.value))
+                }
               />
-            </ColorPicker>
-          </SubRow>
-        </LayerToggle>
+              <span className="value-text">
+                {Math.round(style.windArrowsOpacity * 100)}%
+              </span>
+            </SubRow>
+            <SubRow>
+              <span className="label-text">색상</span>
+              <ColorPicker>
+                <div style={{ backgroundColor: style.arrowColor }} />
+                <input
+                  type="color"
+                  value={style.arrowColor}
+                  onChange={e => updateStyle('arrowColor', e.target.value)}
+                />
+              </ColorPicker>
+            </SubRow>
+          </LayerToggle>
 
-        <LayerToggle
-          label="바람장 애니메이션"
-          checked={layerVisible.windAnimation}
-          onChange={v => toggleLayer('windAnimation', v)}
-        >
-          <SubRow>
-            <span className="label-text">색상</span>
-            <ColorPicker>
-              <div style={{ backgroundColor: style.windColor }} />
+          <LayerToggle
+            label="바람장 애니메이션"
+            checked={layerVisible.windAnimation}
+            onChange={v => toggleLayer('windAnimation', v)}
+          >
+            <SubRow>
+              <span className="label-text">색상</span>
+              <ColorPicker>
+                <div style={{ backgroundColor: style.windColor }} />
+                <input
+                  type="color"
+                  value={style.windColor}
+                  onChange={e => updateStyle('windColor', e.target.value)}
+                />
+              </ColorPicker>
+            </SubRow>
+            <SubRow>
+              <span className="label-text">선 두께</span>
               <input
-                type="color"
-                value={style.windColor}
-                onChange={e => updateStyle('windColor', e.target.value)}
+                type="range"
+                min="0.5"
+                max="3"
+                step="0.1"
+                value={style.windLineWidth ?? 1}
+                onChange={e =>
+                  updateStyle('windLineWidth', Number(e.target.value))
+                }
               />
-            </ColorPicker>
-          </SubRow>
-          <SubRow>
-            <span className="label-text">선 두께</span>
-            <input
-              type="range"
-              min="0.5"
-              max="3"
-              step="0.1"
-              value={style.windLineWidth ?? 1}
-              onChange={e =>
-                updateStyle('windLineWidth', Number(e.target.value))
-              }
-            />
-            <span className="value-text">
-              {(style.windLineWidth ?? 1).toFixed(1)}x
-            </span>
-          </SubRow>
-        </LayerToggle>
-      </SectionBox>
+              <span className="value-text">
+                {(style.windLineWidth ?? 1).toFixed(1)}x
+              </span>
+            </SubRow>
+          </LayerToggle>
+        </SectionBox>
+      )}
 
       <SectionBox title="Earth">
         <LayerToggle
@@ -392,12 +399,13 @@ const LccMapControlPanel = ({ datetime, segments, scaleMeta }) => {
         </LayerToggle>
       </SectionBox>
 
-      <LayerToggle
-        label="바람장 WebGL"
-        checked={layerVisible.webglWind}
-        onChange={v => toggleLayer('webglWind', v)}
-      >
-        <SubRow>
+      {FEATURES.showWebglWindSection && (
+        <LayerToggle
+          label="바람장 WebGL"
+          checked={layerVisible.webglWind}
+          onChange={v => toggleLayer('webglWind', v)}
+        >
+          {/* <SubRow>
           <span className="label-text">선 두께</span>
           <input
             type="range"
@@ -412,67 +420,53 @@ const LccMapControlPanel = ({ datetime, segments, scaleMeta }) => {
           <span className="value-text">
             {style.webglWindLineWidth.toFixed(1)}x
           </span>
-        </SubRow>
-      </LayerToggle>
-
-      <SectionBox title="기타">
-        {/* <LayerToggle
-          label="지도 Zoom"
-          checked={true}
-          onChange={() => {}}
-          disabled={true}
-        >
-          <SubRow>
-            <span className="label-text">줌 레벨</span>
-            <input
-              type="range"
-              min="5"
-              max="13"
-              step="0.1"
-              value={settings.zoom}
-              onChange={e => updateSettings('zoom', parseFloat(e.target.value))}
-            />
-            <span className="value-text">{settings.zoom}</span>
-          </SubRow>
-        </LayerToggle> */}
-        <LayerToggle
-          label="국가 경계"
-          checked={layerVisible.shp}
-          onChange={v => toggleLayer('shp', v)}
-        >
-          <SubRow>
-            <span className="label-text">투명도</span>
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.1"
-              value={style.shpOpacity}
-              onChange={e => updateStyle('shpOpacity', Number(e.target.value))}
-            />
-            <span className="value-text">
-              {Math.round(style.shpOpacity * 100)}%
-            </span>
-          </SubRow>
-          <SubRow>
-            <span className="label-text">색상</span>
-            <ColorPicker>
-              <div style={{ backgroundColor: style.shpColor }} />
-              <input
-                type="color"
-                value={style.shpColor}
-                onChange={e => updateStyle('shpColor', e.target.value)}
-              />
-            </ColorPicker>
-          </SubRow>
+        </SubRow> */}
         </LayerToggle>
+      )}
 
-        <LayerToggle
-          label="격자"
-          checked={layerVisible.grid}
-          onChange={v => toggleLayer('grid', v)}
-        />
-      </SectionBox>
+      {FEATURES.showEtcSection && (
+        <SectionBox title="기타">
+          <LayerToggle
+            label="국가 경계"
+            checked={layerVisible.shp}
+            onChange={v => toggleLayer('shp', v)}
+          >
+            <SubRow>
+              <span className="label-text">투명도</span>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.1"
+                value={style.shpOpacity}
+                onChange={e =>
+                  updateStyle('shpOpacity', Number(e.target.value))
+                }
+              />
+              <span className="value-text">
+                {Math.round(style.shpOpacity * 100)}%
+              </span>
+            </SubRow>
+            <SubRow>
+              <span className="label-text">색상</span>
+              <ColorPicker>
+                <div style={{ backgroundColor: style.shpColor }} />
+                <input
+                  type="color"
+                  value={style.shpColor}
+                  onChange={e => updateStyle('shpColor', e.target.value)}
+                />
+              </ColorPicker>
+            </SubRow>
+          </LayerToggle>
+
+          <LayerToggle
+            label="격자"
+            checked={layerVisible.grid}
+            onChange={v => toggleLayer('grid', v)}
+          />
+        </SectionBox>
+      )}
 
       <FoldBtn onClick={() => setOpen(false)}>접어두기</FoldBtn>
     </Panel>
@@ -488,7 +482,7 @@ const Panel = styled.div`
   z-index: 9999;
 
   background: rgba(255, 255, 255, 0.9);
-  border: 1px solid #e2e2e2
+  border: 1px solid #e2e2e2;
   backdrop-filter: blur(4px);
   padding: 15px;
   border-radius: 8px;

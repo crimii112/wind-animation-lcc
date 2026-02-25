@@ -44,6 +44,9 @@ export class WebGLWindOLAnimator {
     this.lineWidth = lineWidth;
     this.wind.setPointSize(this.lineWidth);
 
+    this._lastZoom = null;
+    this._lastResolution = null;
+
     this._running = true;
     this._bind();
   }
@@ -87,20 +90,8 @@ export class WebGLWindOLAnimator {
     this._rafId = requestAnimationFrame(this._loop);
   };
 
-  updateCanvas() {
-    const size = this.map.getSize();
-    if (!size) return;
-
-    // 항상 지도 전체를 덮음
-    this.canvas.style.left = '0px';
-    this.canvas.style.top = '0px';
-
-    this.canvas.width = size[0];
-    this.canvas.height = size[1];
-
-    const zoom = this.map.getView().getZoom();
+  applyZoomDependentSettings(size, zoom, resolution) {
     console.log('zoom: ', zoom);
-    const resolution = this.map.getView().getResolution();
     console.log('resolution: ', resolution);
 
     // zoom 기반 particle 개수 증가
@@ -135,6 +126,39 @@ export class WebGLWindOLAnimator {
     const speed = baseSpeed * Math.sqrt(resolution / baseResolution);
     this.wind.setSpeedFactor(speed);
     console.log('speedFactor: ', speed);
+
+    // zoom 기반 faceOpacity 증가
+    let fadeOpacity = 0.998;
+
+    if (zoom >= 12) fadeOpacity = 0.9999;
+    else if (zoom >= 11) fadeOpacity = 0.9987;
+
+    this.wind.setFadeOpacity(fadeOpacity);
+  }
+
+  updateCanvas() {
+    const size = this.map.getSize();
+    if (!size) return;
+
+    // 항상 지도 전체를 덮음
+    this.canvas.style.left = '0px';
+    this.canvas.style.top = '0px';
+
+    this.canvas.width = size[0];
+    this.canvas.height = size[1];
+
+    const view = this.map.getView();
+    const zoom = view.getZoom();
+    const resolution = view.getResolution();
+
+    const zoomChanged =
+      this._lastZoom !== zoom || this._lastResolution !== resolution;
+
+    if (zoomChanged) {
+      this.applyZoomDependentSettings(size, zoom, resolution);
+      this._lastZoom = zoom;
+      this._lastResolution = resolution;
+    }
 
     this.wind.resize();
   }

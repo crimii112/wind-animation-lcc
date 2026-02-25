@@ -36,7 +36,9 @@ const LccLegend = ({
             {[...rgbs].reverse().map(item => (
               <ColorRow key={item.min}>
                 <ColorBox style={{ backgroundColor: item.color }} />
-                <ValueText>{item.min.toFixed(precision)}</ValueText>
+                {Number.isFinite(item.min) && (
+                  <ValueText>{item.min.toFixed(precision)}</ValueText>
+                )}
               </ColorRow>
             ))}
           </ColorList>

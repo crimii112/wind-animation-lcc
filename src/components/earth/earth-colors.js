@@ -33,28 +33,30 @@ export const RGBA_RANGES = {
     // { min: 24.85, max: 37.85, color: 'rgba(235, 167, 21, 1)' },
     // { min: 37.85, max: 54.85, color: 'rgba(230, 71, 39, 1)' },
     // { min: 54.85, max: Infinity, color: 'rgba(88, 27, 67, 1)' },
-    { min: 0, max: 4, color: 'rgba(49, 0, 82, 1)' }, // 아주 진한 보라
-    { min: 4, max: 8, color: 'rgba(76, 0, 153, 1)' }, // 보라
-    { min: 8, max: 12, color: 'rgba(0, 0, 204, 1)' }, // 파랑
-    { min: 12, max: 16, color: 'rgba(0, 102, 204, 1)' }, // 파랑-청록
-    { min: 16, max: 20, color: 'rgba(0, 180, 180, 1)' }, // 청록 (중간)
-    { min: 20, max: 24, color: 'rgba(255, 200, 0, 1)' }, // 노랑 (확 튐)
-    { min: 24, max: 28, color: 'rgba(255, 140, 0, 1)' }, // 주황
-    { min: 28, max: 32, color: 'rgba(255, 80, 0, 1)' }, // 진한 주황
-    { min: 32, max: 36, color: 'rgba(220, 0, 0, 1)' }, // 빨강
-    { min: 36, max: 40, color: 'rgba(120, 0, 0, 1)' }, // 암적색
-    { min: 40, max: Infinity, color: 'rgba(50, 0, 0, 1)' },
-    // { min: -10, max: -6, color: 'rgba(49, 0, 82, 1)' }, // 아주 진한 보라
-    // { min: -6, max: -2, color: 'rgba(76, 0, 153, 1)' }, // 보라
-    // { min: -2, max: 2, color: 'rgba(0, 0, 204, 1)' }, // 파랑
-    // { min: 2, max: 6, color: 'rgba(0, 102, 204, 1)' }, // 파랑-청록
-    // { min: 6, max: 10, color: 'rgba(0, 180, 180, 1)' }, // 청록
-    // { min: 10, max: 14, color: 'rgba(255, 200, 0, 1)' }, // 노랑
-    // { min: 14, max: 18, color: 'rgba(255, 140, 0, 1)' }, // 주황
-    // { min: 18, max: 22, color: 'rgba(255, 80, 0, 1)' }, // 진한 주황
-    // { min: 22, max: 26, color: 'rgba(220, 0, 0, 1)' }, // 빨강
-    // { min: 26, max: 30, color: 'rgba(120, 0, 0, 1)' }, // 암적색
-    // { min: 30, max: Infinity, color: 'rgba(50, 0, 0, 1)' },
+    // { min: 0, max: 4, color: 'rgba(49, 0, 82, 1)' }, // 아주 진한 보라
+    // { min: 4, max: 8, color: 'rgba(76, 0, 153, 1)' }, // 보라
+    // { min: 8, max: 12, color: 'rgba(0, 0, 204, 1)' }, // 파랑
+    // { min: 12, max: 16, color: 'rgba(0, 102, 204, 1)' }, // 파랑-청록
+    // { min: 16, max: 20, color: 'rgba(0, 180, 180, 1)' }, // 청록 (중간)
+    // { min: 20, max: 24, color: 'rgba(255, 200, 0, 1)' }, // 노랑 (확 튐)
+    // { min: 24, max: 28, color: 'rgba(255, 140, 0, 1)' }, // 주황
+    // { min: 28, max: 32, color: 'rgba(255, 80, 0, 1)' }, // 진한 주황
+    // { min: 32, max: 36, color: 'rgba(220, 0, 0, 1)' }, // 빨강
+    // { min: 36, max: 40, color: 'rgba(120, 0, 0, 1)' }, // 암적색
+    // { min: 40, max: Infinity, color: 'rgba(50, 0, 0, 1)' },
+    { min: -Infinity, max: -16, color: 'rgba(32, 0, 64, 1)' }, // 매우 진한 보라
+    { min: -16, max: -12, color: 'rgba(49, 0, 82, 1)' }, // 아주 진한 보라
+    { min: -12, max: -8, color: 'rgba(76, 0, 153, 1)' }, // 보라
+    { min: -8, max: -4, color: 'rgba(0, 0, 204, 1)' }, // 파랑
+    { min: -4, max: 0, color: 'rgba(0, 102, 204, 1)' }, // 파랑-청록
+    { min: 0, max: 4, color: 'rgba(0, 180, 180, 1)' }, // 청록
+    { min: 4, max: 8, color: 'rgba(120, 210, 80, 1)' }, // 연두 (완충)
+    { min: 8, max: 12, color: 'rgba(255, 200, 0, 1)' }, // 노랑
+    { min: 12, max: 16, color: 'rgba(255, 140, 0, 1)' }, // 주황
+    { min: 16, max: 20, color: 'rgba(255, 80, 0, 1)' }, // 진한 주황
+    { min: 20, max: 24, color: 'rgba(220, 0, 0, 1)' }, // 빨강
+    { min: 24, max: 28, color: 'rgba(120, 0, 0, 1)' }, // 암적색
+    { min: 28, max: Infinity, color: 'rgba(50, 0, 0, 1)' }, // 매우 진한 적갈
   ],
   O3: [
     {

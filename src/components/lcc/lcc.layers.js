@@ -11,6 +11,9 @@ export function createLccLayers() {
     source: sourceAsiaShp,
     id: 'asiashp',
     opacity: 0.5,
+    renderMode: 'image',
+    updateWhileAnimating: false,
+    updateWhileInteracting: false,
   });
 
   // 모델링 농도장(polygon)
@@ -19,6 +22,9 @@ export function createLccLayers() {
     source: sourceConcPolygon,
     id: 'concPolygon',
     opacity: 0.3,
+    renderMode: 'image',
+    updateWhileAnimating: false,
+    updateWhileInteracting: false,
   });
 
   // 바람장 화살표(Point)
@@ -59,6 +65,8 @@ export function createLccLayers() {
   const layerGrid = new VectorLayer({
     id: 'grid',
     source: sourceGrid,
+    updateWhileAnimating: false,
+    updateWhileInteracting: false,
   });
 
   return {
@@ -79,6 +87,16 @@ export function createLccLayers() {
 /* 모델링 농도 히트맵 feature 생성 - data 전체 polygon 생성 */
 export function createPolygonFeaturesSingle(data, settings, halfCell, rgbs) {
   const colorRange = rgbs[settings.bgPoll];
+
+  const styleCache = new Map();
+  const getStyle = color => {
+    let s = styleCache.get(color);
+    if (!s) {
+      s = new Style({ fill: new Fill({ color }) });
+      styleCache.set(color, s);
+    }
+    return s;
+  };
 
   return data
     .map(item => {
@@ -101,12 +119,13 @@ export function createPolygonFeaturesSingle(data, settings, halfCell, rgbs) {
       });
 
       f.set('overlay', item.overlay);
+      f.setStyle(getStyle(color));
 
-      f.setStyle(
-        new Style({
-          fill: new Fill({ color }),
-        }),
-      );
+      // f.setStyle(
+      //   new Style({
+      //     fill: new Fill({ color }),
+      //   }),
+      // );
 
       return f;
     })

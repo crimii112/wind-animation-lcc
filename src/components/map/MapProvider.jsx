@@ -226,7 +226,7 @@ const MapProvider = ({ id, children }) => {
       const panel = captureTarget.querySelector('.panel-exclude');
       // control 숨기기
       const controls = captureTarget.querySelectorAll(
-        '.ol-control, .custom-maptype-wrapper, .custom-zoom-control, .map-download-btn, .map-fullscreen-btn',
+        '.ol-control, .custom-maptype-wrapper, .custom-zoom-control, .map-download-btn, .map-fullscreen-btn, .ol-tooltip',
       );
 
       try {

@@ -109,7 +109,7 @@ export class WebGLWindOLAnimator {
     console.log('newCount:', newCount);
 
     // zoom 기반 pointSize 증가
-    let pointSize = 1.0;
+    let pointSize = 1.3;
 
     if (zoom >= 11) pointSize = 2.6;
     else if (zoom >= 10) pointSize = 2.3;
@@ -123,7 +123,10 @@ export class WebGLWindOLAnimator {
     const baseResolution = 180;
     const baseSpeed = 0.15;
 
-    const speed = baseSpeed * Math.sqrt(resolution / baseResolution);
+    let speed = baseSpeed * Math.sqrt(resolution / baseResolution);
+    speed = Math.max(speed, 0.12);
+    speed = Math.min(speed, 0.28);
+
     this.wind.setSpeedFactor(speed);
     console.log('speedFactor: ', speed);
 
@@ -131,7 +134,9 @@ export class WebGLWindOLAnimator {
     let fadeOpacity = 0.998;
 
     if (zoom >= 12) fadeOpacity = 0.9999;
-    else if (zoom >= 11) fadeOpacity = 0.9987;
+    else if (zoom >= 11) fadeOpacity = 0.9993;
+    else if (zoom >= 10) fadeOpacity = 0.9988;
+    else if (zoom >= 9) fadeOpacity = 0.9983;
 
     this.wind.setFadeOpacity(fadeOpacity);
   }

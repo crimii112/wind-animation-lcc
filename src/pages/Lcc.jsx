@@ -44,9 +44,10 @@ function Lcc({ mapId, SetMap }) {
   };
 
   const map = useContext(MapContext);
-  const { settings, style, layerVisible } = useContext(LccContext);
+  const { settings, updateSettings, style, layerVisible } =
+    useContext(LccContext);
 
-  const [datetimeTxt, setDatetimeTxt] = useState('');
+  const [datetimeObj, setDatetimeObj] = useState(null);
   const [polygonData, setPolygonData] = useState(null);
   const [windData, setWindData] = useState([]);
   const [earthData, setEarthData] = useState([]);
@@ -98,6 +99,47 @@ function Lcc({ mapId, SetMap }) {
       map.removeLayer(layerGrid);
     };
   }, [map, map.ol_uid]);
+
+  useEffect(() => {
+    if (!map?.ol_uid) return;
+
+    const worker = new Worker(
+      new URL('@/worker/hourTicker.worker.js', import.meta.url),
+      { type: 'module' },
+    );
+
+    const refreshToNow = () => {
+      updateSettings('tstep', null);
+    };
+
+    worker.onmessage = e => {
+      if (e.data?.type === 'TOP_OF_HOUR') refreshToNow();
+    };
+
+    worker.postMessage({ type: 'START' });
+
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        refreshToNow();
+        worker.postMessage({ type: 'RESCHEDULE' });
+      }
+    };
+
+    const onFocus = () => {
+      refreshToNow();
+      worker.postMessage({ type: 'RESCHEDULE' });
+    };
+
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', onFocus);
+
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', onFocus);
+      worker.postMessage({ type: 'STOP' });
+      worker.terminate();
+    };
+  }, [map?.ol_uid, updateSettings]);
 
   /** 모델링 농도장 폴리곤 hover tooltip(overlay) 처리 */
   usePolygonOverlay({ map, layersRef, settingsRef, layerVisibleRef });
@@ -160,7 +202,12 @@ function Lcc({ mapId, SetMap }) {
       try {
         const data = await fetchLccData();
 
-        if (data.datetime) setDatetimeTxt(data.datetime);
+        if (data.datetime) setDatetimeObj(data.datetime);
+
+        if (settings.tstep == null && data.datetime?.displayTstep != null) {
+          updateSettings('tstep', data.datetime.displayTstep);
+          return;
+        }
 
         // 모델링 농도 Polygon 생성
         if (data.polygonData) {
@@ -193,6 +240,7 @@ function Lcc({ mapId, SetMap }) {
   /** Earth 엔진용 데이터 로드 */
   useEffect(() => {
     if (!map?.ol_uid) return;
+    if (settings.tstep == null) return;
 
     const load = async () => {
       setEarthData([]);
@@ -220,6 +268,7 @@ function Lcc({ mapId, SetMap }) {
   /** WebGL 엔진용 데이터 로드 */
   useEffect(() => {
     if (!map?.ol_uid) return;
+    if (settings.tstep == null) return;
 
     const load = async () => {
       try {
@@ -613,7 +662,7 @@ function Lcc({ mapId, SetMap }) {
 
         <div className="panel-exclude">
           <LccMapControlPanel
-            datetime={datetimeTxt}
+            datetime={datetimeObj}
             segments={EARTH_SEGMENTS_MAP[settings.bgPoll]}
             scaleMeta={EARTH_SCALE_META[settings.bgPoll]}
           />

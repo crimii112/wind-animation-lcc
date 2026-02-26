@@ -10,6 +10,9 @@ export function usePolygonOverlay({
   const overlayRef = useRef(null);
   const overlayElRef = useRef(null);
 
+  const lastRunRef = useRef(0);
+  const lastFeatureRef = useRef(null);
+
   useEffect(() => {
     if (!map?.ol_uid) return;
 
@@ -41,64 +44,63 @@ export function usePolygonOverlay({
     map.addOverlay(overlay);
 
     const handlePointerMove = e => {
+      const now = performance.now();
+
+      if (now - lastRunRef.current < 50) return;
+      lastRunRef.current = now;
+
       const { polygonMode } = settingsRef.current;
       const { concPolygon } = layerVisibleRef.current;
 
       if (polygonMode !== 'single' || !concPolygon) {
+        lastFeatureRef.current = null;
         overlay.setPosition(undefined);
         return;
       }
 
-      const coord = e.coordinate;
+      const pixel = map.getEventPixel(e.originalEvent);
 
-      const source = layersRef.current.layerConcPolygon.getSource();
-      const features = source.getFeatures();
+      const targetLayer = layersRef.current.layerConcPolygon;
 
-      let feature = null;
-
-      for (const f of features) {
-        const geom = f.getGeometry();
-        if (geom && geom.intersectsCoordinate(coord)) {
-          feature = f;
-          break;
-        }
-      }
+      const feature = map.forEachFeatureAtPixel(pixel, (f, layer) => f, {
+        layerFilter: layer => layer === targetLayer,
+        hitTolerance: 0,
+      });
 
       if (!feature) {
+        lastFeatureRef.current = null;
         overlay.setPosition(undefined);
         return;
       }
 
-      const overlayTxt = feature.get('overlay');
-
-      if (overlayTxt) {
-        el.innerText = overlayTxt;
-
-        const pixel = map.getPixelFromCoordinate(coord);
-        const mapSize = map.getSize();
-
-        if (pixel && mapSize) {
-          const [, y] = pixel;
-          const [, h] = mapSize;
-
-          if (y < 200) {
-            overlay.setPositioning('top-center');
-            overlay.setOffset([0, 10]);
-          } else {
-            overlay.setPositioning('bottom-center');
-            overlay.setOffset([0, -10]);
-          }
-        }
-
-        overlay.setPosition(coord);
-      } else {
-        overlay.setPosition(undefined);
+      if (lastFeatureRef.current !== feature) {
+        lastFeatureRef.current = feature;
+        const overlayTxt = feature.get('overlay');
+        el.innerText = overlayTxt || '';
       }
+
+      const mapSize = map.getSize();
+      if (pixel && mapSize) {
+        const [, y] = pixel;
+        const [, h] = mapSize;
+
+        if (y < 200) {
+          overlay.setPositioning('top-center');
+          overlay.setOffset([0, 10]);
+        } else {
+          overlay.setPositioning('bottom-center');
+          overlay.setOffset([0, -10]);
+        }
+      }
+
+      overlay.setPosition(e.coordinate);
     };
 
     const handleMouseLeave = () => {
+      lastFeatureRef.current = null;
       overlay.setPosition(undefined);
     };
+
     map.on('pointermove', handlePointerMove);
     map.getViewport().addEventListener('mouseleave', handleMouseLeave);
 

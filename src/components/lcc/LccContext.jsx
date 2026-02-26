@@ -9,7 +9,7 @@ export const LccProvider = ({ children }) => {
   const [settings, setSettings] = useState({
     gridKm: 9,
     layer: 0,
-    tstep: 0,
+    tstep: null,
     bgPoll: 'PM2.5',
     arrowGap: 3,
     polygonMode: IS_WAL ? 'single' : 'single',

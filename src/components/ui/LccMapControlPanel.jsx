@@ -1,12 +1,6 @@
 import { useContext, useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
-import {
-  ChevronLeft,
-  ChevronRight,
-  Pause,
-  Play,
-  RotateCcw,
-} from 'lucide-react';
+import { ChevronLeft, ChevronRight, Pause, Play, Clock } from 'lucide-react';
 
 import { LccContext } from '@/components/lcc/LccContext';
 import ColorScale from './ColorScale';
@@ -61,7 +55,9 @@ const LccMapControlPanel = ({ datetime, segments, scaleMeta }) => {
   } = useContext(LccContext);
   const [open, setOpen] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [speedMultiplier, setSpeedMultiplier] = useState(1);
+  const [speedMultiplier, setSpeedMultiplier] = useState(0.3);
+  const [nextUpdateTxt, setNextUpdateTxt] = useState('00:00');
+
   const timerRef = useRef(null);
 
   /* 자동 재생 로직 */
@@ -91,6 +87,30 @@ const LccMapControlPanel = ({ datetime, segments, scaleMeta }) => {
     updateSettings('tstep', Math.min(MAX_TSTEP, settings.tstep + 1));
   };
 
+  const msUntilNextHour = () => {
+    const now = new Date();
+    const next = new Date(now);
+    next.setMinutes(0, 0, 0);
+    next.setHours(now.getHours() + 1);
+    return next.getTime() - now.getTime();
+  };
+
+  const formatMMSS = totalSec => {
+    const mm = String(Math.floor(totalSec / 60)).padStart(2, '0');
+    const ss = String(totalSec % 60).padStart(2, '0');
+    return `${mm}:${ss}`;
+  };
+
+  useEffect(() => {
+    const tick = () => {
+      const sec = Math.max(0, Math.ceil(msUntilNextHour() / 1000));
+      setNextUpdateTxt(formatMMSS(sec));
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, []);
+
   if (!open)
     return (
       <PanelOpenBtn onClick={() => setOpen(true)}>
@@ -103,7 +123,13 @@ const LccMapControlPanel = ({ datetime, segments, scaleMeta }) => {
       {/* 상단 날짜 및 시간 표시 */}
       {datetime && (
         <DatetimeHeader>
-          <span className="date-text">{datetime}</span>
+          <div className="date-text">{datetime.displayDatetime}</div>
+          <div className="sub-text">
+            모델링시작시간: {datetime.fileStartDatetime}
+          </div>
+          <div className="sub-text">
+            다음 업데이트까지 <span className="countdown">{nextUpdateTxt}</span>
+          </div>
         </DatetimeHeader>
       )}
 
@@ -117,18 +143,14 @@ const LccMapControlPanel = ({ datetime, segments, scaleMeta }) => {
           <ChevronLeft size={16} />
         </button>
         <button
-          className={`play-main-btn ${isPlaying ? 'playing' : ''}`}
-          onClick={() => setIsPlaying(!isPlaying)}
+          className="nowtime-btn"
+          onClick={() => {
+            setIsPlaying(false);
+            updateSettings('tstep', null);
+          }}
         >
-          {isPlaying ? (
-            <>
-              <Pause size={14} fill="currentColor" /> 일시정지
-            </>
-          ) : (
-            <>
-              <Play size={14} fill="currentColor" /> 재생 시작
-            </>
-          )}
+          <Clock size={14} />
+          현재 시간
         </button>
         <button
           className="icon-btn"
@@ -138,25 +160,27 @@ const LccMapControlPanel = ({ datetime, segments, scaleMeta }) => {
           <ChevronRight size={16} />
         </button>
         <div className="extra-controls">
+          <button
+            className={`play-main-btn ${isPlaying ? 'playing' : ''}`}
+            onClick={() => setIsPlaying(!isPlaying)}
+          >
+            {isPlaying ? (
+              <>
+                <Pause size={14} fill="currentColor" />
+              </>
+            ) : (
+              <>
+                <Play size={14} fill="currentColor" />
+              </>
+            )}
+          </button>
           <SpeedSelect
             value={speedMultiplier}
             onChange={e => setSpeedMultiplier(Number(e.target.value))}
           >
-            <option value={0.1}>0.1x</option>
+            <option value={0.2}>0.2x</option>
             <option value={0.3}>0.3x</option>
-            <option value={0.5}>0.5x</option>
-            <option value={1.0}>1.0x</option>
-            <option value={1.2}>1.2x</option>
           </SpeedSelect>
-          <button
-            className="icon-btn"
-            onClick={() => {
-              setIsPlaying(false);
-              updateSettings('tstep', MIN_TSTEP);
-            }}
-          >
-            <RotateCcw size={14} />
-          </button>
         </div>
       </PlayControlRow>
 
@@ -189,8 +213,11 @@ const LccMapControlPanel = ({ datetime, segments, scaleMeta }) => {
       <ControlRow>
         <span>TSTEP</span>
         <select
-          value={settings.tstep}
-          onChange={e => updateSettings('tstep', Number(e.target.value))}
+          value={settings.tstep ?? ''}
+          onChange={e => {
+            const v = e.target.value;
+            updateSettings('tstep', v === '' ? null : Number(v));
+          }}
         >
           {Array.from({ length: 239 }, (_, i) => (
             <option key={i} value={i}>
@@ -539,6 +566,19 @@ const DatetimeHeader = styled.div`
     font-size: 16px;
     color: #333;
   }
+
+  .sub-text {
+    margin-top: 4px;
+    font-size: 13px;
+    color: #666;
+    font-weight: 500;
+  }
+
+  .countdown {
+    font-weight: 800;
+    color: #212529;
+    letter-spacing: 0.2px;
+  }
 `;
 
 const ControlRow = styled.label`
@@ -715,18 +755,61 @@ const PlayControlRow = styled.div`
     }
   }
 
-  .play-main-btn {
+  .nowtime-btn {
     flex: 1;
     height: 32px;
     padding: 0 12px;
-    gap: 8px;
-    background: #3a86ff;
-    color: white;
+    gap: 6px;
+
+    background: #f1f3f5;
+    color: #343a40;
+    border: 1px solid #ced4da;
+
+    font-size: 13px;
+    font-weight: 700;
+
     white-space: nowrap;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .nowtime-btn:hover:not(:disabled) {
+    background: #e9ecef;
+    border-color: #adb5bd;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+    transform: translateY(-0.5px);
+  }
+
+  .nowtime-btn:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  .nowtime-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+
+  .nowtime-btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(173, 181, 189, 0.35);
+  }
+
+  .play-main-btn {
+    height: 32px;
+    padding: 0 12px;
+    gap: 8px;
+
+    background: #3a86ff;
+    color: #fff;
+    border: 1px solid transparent;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+
+    white-space: nowrap;
 
     &:hover {
       background: #2575fc;
+      border-color: transparent;
       box-shadow: 0 4px 8px rgba(58, 134, 255, 0.3);
       transform: translateY(-0.5px);
     }

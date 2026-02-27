@@ -39,12 +39,12 @@ const MapProvider = ({ id, children }) => {
 
   const currentTypeRef = useRef('Base');
   const toggleBtnRef = useRef(null);
+  const gridKmRef = useRef(settings.gridKm);
 
   useEffect(() => {
     if (mapObj?.ol_uid) return;
 
     const center = [34980, -215509];
-    const VWORLD_MIN_ZOOM = 7.8;
 
     const osmLayer = new Tile({
       name: 'OSM',
@@ -73,41 +73,73 @@ const MapProvider = ({ id, children }) => {
 
     const map = new OlMap({
       controls: defaultControls({ zoom: false, rotate: false }),
-      // .extend([
-      //   new Zoom({
-      //     className: 'custom-zoom-control',
-      //     delta: 0.5,
-      //   }),
-      // ]),
       interactions: defaultInteractions().extend([new DblClickDragZoom()]),
       layers: [osmLayer, ...Object.values(vworldLayers)],
       view,
       target: id,
     });
 
-    const updateVWorldVisibility = () => {
-      const z = view.getZoom();
-      const zoomOk = typeof z === 'number' && z >= VWORLD_MIN_ZOOM;
+    const mapTypeItemEls = {};
+    const updateBaseLayerVisibility = () => {
+      const gridKm = gridKmRef.current;
       const currentType = currentTypeRef.current;
 
-      let vworldVisible = false;
+      // gridKm=27: vworld(위성/하이브리드/백/미드나잇) disabled
+      const disalbedVworld = gridKm === 27;
+      VWORLD_LAYER_CONFIGS.forEach(({ key }) => {
+        const el = mapTypeItemEls[key];
+        if (!el) return;
 
-      Object.entries(vworldLayers).forEach(([key, layer]) => {
-        const visible = zoomOk && key === currentType;
-        layer.setVisible(visible);
-        if (visible) vworldVisible = true;
+        if (key === 'Base') {
+          el.classList.remove('disabled');
+          return;
+        }
+
+        el.classList.toggle('disabled', disalbedVworld);
       });
+      mapTypeItemEls['None']?.classList.remove('disabled');
 
-      osmLayer.setVisible(!vworldVisible);
+      // 항상 모든 레이어 끄기
+      osmLayer.setVisible(false);
+      Object.values(vworldLayers).forEach(layer => layer.setVisible(false));
+
+      // '배경없음'
+      if (currentType === 'None') return;
+
+      // gridKm=9: OSM off, VWorld Base on
+      if (gridKm === 9) {
+        osmLayer.setVisible(false);
+        Object.entries(vworldLayers).forEach(([key, layer]) => {
+          layer.setVisible(
+            key === (vworldLayers[currentType] ? currentType : 'Base'),
+          );
+        });
+        return;
+      }
+
+      // gridKm=27: OSM on, VWorld off
+      if (gridKm === 27) {
+        Object.values(vworldLayers).forEach(layer => layer.setVisible(false));
+        osmLayer.setVisible(true);
+        return;
+      }
     };
 
-    updateVWorldVisibility();
-    view.on('change:resolution', updateVWorldVisibility);
+    updateBaseLayerVisibility();
+
+    const setActiveMapType = typeKey => {
+      Object.values(mapTypeItemEls).forEach(el =>
+        el.classList.remove('active'),
+      );
+      mapTypeItemEls[typeKey]?.classList.add('active');
+    };
 
     // 외부에서 지도 타입 변경 가능하도록 메서드 추가
+    map.updateBaseLayerVisibility = updateBaseLayerVisibility;
     map.setMapType = type => {
       currentTypeRef.current = type;
-      updateVWorldVisibility();
+      updateBaseLayerVisibility();
+      setActiveMapType(type);
     };
 
     /** 지도 선택 버튼 Control */
@@ -137,19 +169,30 @@ const MapProvider = ({ id, children }) => {
     document.addEventListener('click', handleDocumentClick);
 
     // 레이어 선택 목록 생성
+    // 1) 배경 없음
+    const noneItem = document.createElement('div');
+    noneItem.className = 'maptype-item';
+    noneItem.innerText = '배경없음';
+
+    mapTypeItemEls['None'] = noneItem;
+
+    noneItem.onclick = () => {
+      map.setMapType('None');
+      dropdown.style.display = 'none';
+    };
+    dropdown.appendChild(noneItem);
+
+    // 2) vworld layer
     VWORLD_LAYER_CONFIGS.forEach(type => {
       const item = document.createElement('div');
       item.className = 'maptype-item';
       item.innerText = type.label;
 
+      mapTypeItemEls[type.key] = item;
+
       item.onclick = () => {
         map.setMapType(type.key);
         dropdown.style.display = 'none';
-
-        Array.from(dropdown.children).forEach(el =>
-          el.classList.remove('active'),
-        );
-        item.classList.add('active');
       };
 
       if (type.key === currentTypeRef.current) {
@@ -293,7 +336,6 @@ const MapProvider = ({ id, children }) => {
     setMapObj(map);
 
     return () => {
-      view.un('change:resolution', updateVWorldVisibility);
       map.setTarget(undefined);
     };
   }, [id]);
@@ -315,20 +357,30 @@ const MapProvider = ({ id, children }) => {
   }, [mapObj]);
 
   useEffect(() => {
-    if (!toggleBtnRef.current) return;
+    gridKmRef.current = settings.gridKm;
+    if (!mapObj?.ol_uid) return;
+
+    // gridKm=9: None 유지, 나머지는 Base로
+    if (settings.gridKm === 9) {
+      if (currentTypeRef.current !== 'None') {
+        mapObj.setMapType?.('Base');
+      } else {
+        mapObj.updateBaseLayerVisibility?.();
+      }
+      return;
+    }
 
     if (settings.gridKm === 27) {
-      toggleBtnRef.current.disabled = true;
-      toggleBtnRef.current.style.opacity = 0.5;
-      toggleBtnRef.current.style.cursor = 'not-allowed';
-
-      currentTypeRef.current = 'Base';
-    } else {
-      toggleBtnRef.current.disabled = false;
-      toggleBtnRef.current.style.opacity = 1;
-      toggleBtnRef.current.style.cursor = 'pointer';
+      if (currentTypeRef.current !== 'None') {
+        mapObj.setMapType?.('Base');
+      } else {
+        mapObj.updateBaseLayerVisibility?.();
+      }
+      return;
     }
-  }, [settings.gridKm]);
+
+    mapObj.updateBaseLayerVisibility?.();
+  }, [settings.gridKm, mapObj]);
 
   useEffect(() => {
     if (!mapObj || !mapObj?.ol_uid) return;
@@ -430,6 +482,16 @@ const MapDiv = styled.div`
   .maptype-item.active {
     color: #4dabf7;
     font-weight: 600;
+  }
+
+  .maptype-item.disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+  .maptype-item.disabled.active {
+    color: #dcdcdc;
+    font-weight: 500;
   }
 
   .custom-zoom-control {

@@ -12,7 +12,7 @@ export const LccProvider = ({ children }) => {
     tstep: null,
     bgPoll: 'PM2.5',
     arrowGap: 3,
-    polygonMode: IS_WAL ? 'single' : 'single',
+    polygonMode: IS_WAL ? 'fixedSingle' : 'fixedSingle',
     zoom: 7.8,
   });
 
@@ -44,7 +44,7 @@ export const LccProvider = ({ children }) => {
   const updateSettings = useCallback((key, value) => {
     setSettings(prev => {
       if (IS_WAL && key === 'polygonMode') {
-        return { ...prev, polygonMode: 'single' };
+        return { ...prev, polygonMode: 'fixedSingle' };
       }
       return { ...prev, [key]: value };
     });

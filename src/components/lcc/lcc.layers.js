@@ -121,15 +121,32 @@ export function createPolygonFeaturesSingle(data, settings, halfCell, rgbs) {
       f.set('overlay', item.overlay);
       f.setStyle(getStyle(color));
 
-      // f.setStyle(
-      //   new Style({
-      //     fill: new Fill({ color }),
-      //   }),
-      // );
-
       return f;
     })
     .filter(Boolean);
+}
+
+export function createPolygonFeaturesFixedSingle(data, halfCell) {
+  return data.map((item, idx) => {
+    const f = new Feature({
+      geometry: new Polygon([
+        [
+          [item.lon - halfCell, item.lat + halfCell],
+          [item.lon - halfCell, item.lat - halfCell],
+          [item.lon + halfCell, item.lat - halfCell],
+          [item.lon + halfCell, item.lat + halfCell],
+          [item.lon - halfCell, item.lat + halfCell],
+        ],
+      ]),
+    });
+
+    f.set('idx', idx);
+
+    f.set('value', item.value);
+    f.set('overlay', item.overlay);
+
+    return f;
+  });
 }
 
 /** 모델링 농도 히트맵 feature 생성 - legend 기준 multipolygon 생성 */
@@ -176,8 +193,12 @@ export function createPolygonFeaturesMulti(data, settings, halfCell, rgbs) {
 }
 
 export function createPolygonFeatures(data, settings, halfCell, rgbs) {
+  if (settings.polygonMode === 'fixedSingle')
+    return createPolygonFeaturesFixedSingle(data, halfCell);
+
   if (settings.polygonMode === 'single')
     return createPolygonFeaturesSingle(data, settings, halfCell, rgbs);
+
   return createPolygonFeaturesMulti(data, settings, halfCell, rgbs);
 }
 

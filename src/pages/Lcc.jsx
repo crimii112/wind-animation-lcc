@@ -31,6 +31,7 @@ import {
 import { WebGLWindOLAnimator } from '@/components/webgl/webgl-wind-ol-engine';
 import { useLccApi } from '@/hooks/useLccApi';
 import { usePolygonOverlay } from '@/hooks/usePolygonOverlay';
+import { createPolygonFeaturesFixedSingle } from '@/components/lcc/lcc.layers';
 
 /**
  * METCRO2D, ACONC 파일 데이터로 가져옴 => layer 하나
@@ -56,6 +57,10 @@ function Lcc({ mapId, SetMap }) {
   const layersRef = useRef(createLccLayers());
   const settingsRef = useRef(settings);
   const layerVisibleRef = useRef(layerVisible);
+
+  const fixedPolyMapRef = useRef(null);
+  const fixedPolyInitedRef = useRef(false);
+
   const windParticlesRef = useRef([]);
   const earthWindAnimatorRef = useRef(null);
   const earthScalarAnimatorRef = useRef(null);
@@ -130,12 +135,10 @@ function Lcc({ mapId, SetMap }) {
       worker.postMessage({ type: 'RESCHEDULE' });
     };
 
-    document.addEventListener('visibilitychange', onVisible);
-    window.addEventListener('focus', onFocus);
+    // document.addEventListener('visibilitychange', onVisible);
 
     return () => {
-      document.removeEventListener('visibilitychange', onVisible);
-      window.removeEventListener('focus', onFocus);
+      // document.removeEventListener('visibilitychange', onVisible);
       worker.postMessage({ type: 'STOP' });
       worker.terminate();
     };
@@ -192,7 +195,8 @@ function Lcc({ mapId, SetMap }) {
       const { sourceConcPolygon, sourceWindArrows, sourceGrid } =
         layersRef.current;
 
-      sourceConcPolygon.clear();
+      if (settings.polygonMode !== 'fixedSingle') sourceConcPolygon.clear();
+      else if (!fixedPolyInitedRef.current) sourceConcPolygon.clear();
       sourceWindArrows.clear();
       sourceGrid.clear();
 
@@ -211,8 +215,40 @@ function Lcc({ mapId, SetMap }) {
 
         // 모델링 농도 Polygon 생성
         if (data.polygonData) {
-          setPolygonData(data.polygonData);
           sourceGrid.addFeatures(createGridFeatures(data.polygonData));
+
+          if (settings.polygonMode === 'fixedSingle') {
+            if (!fixedPolyInitedRef.current) {
+              // feature 없는 경우 -> 생성
+              sourceConcPolygon.clear();
+
+              const feats = createPolygonFeaturesFixedSingle(
+                data.polygonData,
+                halfCell,
+              );
+              sourceConcPolygon.addFeatures(feats);
+
+              const m = new Map();
+              feats.forEach(f => m.set(f.get('idx'), f));
+              fixedPolyMapRef.current = m;
+              fixedPolyInitedRef.current = true;
+            } else {
+              // feature 있는 경우 -> 속성만 업데이트
+              const m = fixedPolyMapRef.current;
+              if (m) {
+                data.polygonData.forEach((item, idx) => {
+                  const f = m.get(idx);
+                  if (!f) return;
+                  f.set('value', item.value);
+                  f.set('overlay', item.overlay);
+                });
+
+                sourceConcPolygon.changed();
+              }
+            }
+          } else {
+            setPolygonData(data.polygonData);
+          }
         }
 
         if (data.arrowData) {
@@ -406,11 +442,46 @@ function Lcc({ mapId, SetMap }) {
     );
   }, [polygonData, settings.polygonMode, halfCell]);
 
+  /** polygonMode === 'fixedSingle'일 때 style 변경 */
+  useEffect(() => {
+    const layer = layersRef.current.layerConcPolygon;
+
+    if (settings.polygonMode !== 'fixedSingle') return;
+
+    const colorRange = RGBA_RANGES[settings.bgPoll];
+
+    const styleCache = new Map();
+    const getStyle = color => {
+      let s = styleCache.get(color);
+      if (!s) {
+        s = new Style({ fill: new Fill({ color }) });
+        styleCache.set(color, s);
+      }
+      return s;
+    };
+
+    layer.setStyle(f => {
+      const v = f.get('value');
+      if (v == null) return null;
+
+      const color = colorRange.find(s => v >= s.min && v < s.max)?.color;
+      if (!color) return null;
+
+      return getStyle(color);
+    });
+  }, [settings.polygonMode, settings.bgPoll]);
+
   useEffect(() => {
     if (!map?.ol_uid) return;
     if (!polygonData) return;
+    if (settings.polygonMode === 'fixedSingle') return;
     redrawPolygons();
   }, [map?.ol_uid, polygonData, redrawPolygons]);
+
+  useEffect(() => {
+    fixedPolyInitedRef.current = false;
+    fixedPolyMapRef.current = null;
+  }, [settings.gridKm, settings.layer, settings.polygonMode]);
 
   /** windData 변경 시 particle 객체 재생성(색상 반영) */
   useEffect(() => {

@@ -55,7 +55,7 @@ const LccMapControlPanel = ({ datetime, segments, scaleMeta }) => {
   } = useContext(LccContext);
   const [open, setOpen] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [speedMultiplier, setSpeedMultiplier] = useState(0.3);
+  const [speedMultiplier, setSpeedMultiplier] = useState(0.5);
   const [nextUpdateTxt, setNextUpdateTxt] = useState('00:00');
 
   const timerRef = useRef(null);
@@ -180,6 +180,7 @@ const LccMapControlPanel = ({ datetime, segments, scaleMeta }) => {
           >
             <option value={0.2}>0.2x</option>
             <option value={0.3}>0.3x</option>
+            <option value={0.5}>0.5x</option>
           </SpeedSelect>
         </div>
       </PlayControlRow>
@@ -259,6 +260,7 @@ const LccMapControlPanel = ({ datetime, segments, scaleMeta }) => {
             >
               <option value="multi">멀티 폴리곤</option>
               <option value="single">단일 폴리곤(오버레이)</option>
+              <option value="fixedSingle">단일 폴리곤(고정)</option>
             </select>
           </SubRow>
         )}

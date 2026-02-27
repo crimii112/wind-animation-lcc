@@ -52,7 +52,10 @@ export function usePolygonOverlay({
       const { polygonMode } = settingsRef.current;
       const { concPolygon } = layerVisibleRef.current;
 
-      if (polygonMode !== 'single' || !concPolygon) {
+      const overlayEnabled =
+        (polygonMode === 'single' || polygonMode === 'fixedSingle') &&
+        concPolygon;
+      if (!overlayEnabled) {
         lastFeatureRef.current = null;
         overlay.setPosition(undefined);
         return;
@@ -64,7 +67,7 @@ export function usePolygonOverlay({
 
       const feature = map.forEachFeatureAtPixel(pixel, (f, layer) => f, {
         layerFilter: layer => layer === targetLayer,
-        hitTolerance: 0,
+        hitTolerance: 2,
       });
 
       if (!feature) {
@@ -93,7 +96,11 @@ export function usePolygonOverlay({
         }
       }
 
-      overlay.setPosition(e.coordinate);
+      const geom = feature.getGeometry();
+      const coord =
+        geom?.getClosestPoint(map.getCoordinateFromPixel(pixel)) ??
+        e.coordinate;
+      overlay.setPosition(coord);
     };
 
     const handleMouseLeave = () => {

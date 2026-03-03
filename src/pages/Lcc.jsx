@@ -148,42 +148,39 @@ function Lcc({ mapId, SetMap }) {
   usePolygonOverlay({ map, layersRef, settingsRef, layerVisibleRef });
 
   /** shp(시도/국가) 데이터 로드 */
-  useEffect(() => {
-    if (!map?.ol_uid) return;
+  // useEffect(() => {
+  //   if (!map?.ol_uid) return;
 
-    const load = async () => {
-      const { sourceAsiaShp, layerAsiaShp } = layersRef.current;
-      sourceAsiaShp.clear();
+  //   const load = async () => {
+  //     const { sourceAsiaShp, layerAsiaShp } = layersRef.current;
+  //     sourceAsiaShp.clear();
 
-      try {
-        const data = await fetchShp();
-        if (!data) return;
+  //     try {
+  //       const data = await fetchShp();
+  //       if (!data) return;
 
-        if (data.asiashp) {
-          const asiaFeatures = new GeoJSON().readFeatures(data.asiashp, {
-            dataProjection: 'EPSG:4326',
-            featureProjection: 'LCC',
-          });
+  //       if (data.asiashp) {
+  //         const asiaFeatures = new GeoJSON().readFeatures(data.asiashp);
 
-          sourceAsiaShp.addFeatures(asiaFeatures);
-        }
+  //         sourceAsiaShp.addFeatures(asiaFeatures);
+  //       }
 
-        const boundaryStyle = new Style({
-          stroke: new Stroke({
-            color: 'black',
-            width: 1.5,
-          }),
-        });
+  //       const boundaryStyle = new Style({
+  //         stroke: new Stroke({
+  //           color: 'black',
+  //           width: 1.5,
+  //         }),
+  //       });
 
-        layerAsiaShp.setStyle(boundaryStyle);
-      } catch (e) {
-        console.error('Error fetching sido shp data:', e);
-        alert('shp 데이터를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.');
-      }
-    };
+  //       layerAsiaShp.setStyle(boundaryStyle);
+  //     } catch (e) {
+  //       console.error('Error fetching sido shp data:', e);
+  //       alert('shp 데이터를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.');
+  //     }
+  //   };
 
-    load();
-  }, [map?.ol_uid]);
+  //   load();
+  // }, [map?.ol_uid]);
 
   /** LCC(농도 폴리곤 + 바람 화살표) 데이터 로드 */
   useEffect(() => {

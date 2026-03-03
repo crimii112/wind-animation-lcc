@@ -248,7 +248,7 @@ export class EarthWindOLAnimator {
     else if (zoom >= 9) densityFactor = 0.3;
     else if (zoom >= 8) densityFactor = 0.5;
     else densityFactor = 1.0;
-    this.particleMultiplier = (dx === 27000 ? 0.003 : 0.0015) * densityFactor;
+    this.particleMultiplier = (dx === 27000 ? 0.0025 : 0.0015) * densityFactor;
 
     // 바람 세기에 따라 어떤 색을 쓸지 배열 생성
     this._colorStyles = windIntensityColorScale(
@@ -269,7 +269,10 @@ export class EarthWindOLAnimator {
 
     // 매 프레임 화면 ctx에 직접 그리지 않고, trailCanvas에 먼저 그리고 나중에 한 번에 화면에 붙임
     this._trailCanvas = document.createElement('canvas');
-    this._trailCtx = this._trailCanvas.getContext('2d', { alpha: true });
+    this._trailCtx = this._trailCanvas.getContext('2d', {
+      alpha: true,
+      willReadFrequently: true,
+    });
   }
 
   // 지도 크기랑 캔버스 크기 맞추기
@@ -427,7 +430,7 @@ export class EarthWindOLAnimator {
         // const xt = x + v[0];
         // const yt = y + v[1];
 
-        const maxStep = 4; // 최대 이동 제한
+        const maxStep = 3; // 최대 이동 제한
         const dx = Math.max(-maxStep, Math.min(maxStep, v[0]));
         const dy = Math.max(-maxStep, Math.min(maxStep, v[1]));
 
@@ -445,7 +448,7 @@ export class EarthWindOLAnimator {
         }
       }
 
-      p.age += 0.6; // 점의 나이 늘리기
+      p.age += 0.4; // 점의 나이 늘리기
     }
 
     // 점 -> 선으로 그리기

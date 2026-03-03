@@ -3,18 +3,57 @@ import VectorSource from 'ol/source/Vector';
 import { Fill, RegularShape, Stroke, Style } from 'ol/style';
 import { MultiPoint, MultiPolygon, Point, Polygon } from 'ol/geom';
 import { Feature } from 'ol';
+import TileGrid from 'ol/tilegrid/TileGrid';
+import VectorTileLayer from 'ol/layer/VectorTile';
+import VectorTileSource from 'ol/source/VectorTile';
+import MVT from 'ol/format/MVT';
+import { get } from 'ol/proj';
 
+const LCC_EXTENT = [
+  -4112662.3746867785, -3518704.607206602, 4341221.533903961, 2511411.832380196,
+];
+
+const RESOLUTIONS = [
+  33022.98401793258, 16511.49200896629, 8255.746004483144, 4127.873002241572,
+  2063.936501120786, 1031.968250560393, 515.9841252801965, 257.99206264009825,
+  128.99603132004913, 64.49801566002456, 32.24900783001228, 16.12450391500614,
+  8.06225195750307,
+];
+
+const LCC_PROJ = get('LCC');
 export function createLccLayers() {
   // 아시아 경계(shp)
-  const sourceAsiaShp = new VectorSource({ wrapX: false });
-  const layerAsiaShp = new VectorLayer({
-    source: sourceAsiaShp,
+  const tileGrid = new TileGrid({
+    extent: LCC_EXTENT,
+    tileSize: 256,
+    resolutions: RESOLUTIONS,
+  });
+  const layerAsiaShp = new VectorTileLayer({
     id: 'asiashp',
     opacity: 0.5,
-    renderMode: 'image',
-    updateWhileAnimating: false,
-    updateWhileInteracting: false,
+    source: new VectorTileSource({
+      format: new MVT(),
+      projection: LCC_PROJ,
+      tileGrid: tileGrid,
+      url: `${import.meta.env.VITE_WIND_API_URL}/api/asiashp/tiles/{z}/{x}/{y}.pbf`,
+      cacheSize: 512,
+    }),
+    style: new Style({
+      stroke: new Stroke({
+        color: 'black',
+        width: 1.5,
+      }),
+    }),
   });
+  // const sourceAsiaShp = new VectorSource({ wrapX: false });
+  // const layerAsiaShp = new VectorLayer({
+  //   source: sourceAsiaShp,
+  //   id: 'asiashp',
+  //   opacity: 0.5,
+  //   renderMode: 'image',
+  //   updateWhileAnimating: false,
+  //   updateWhileInteracting: false,
+  // });
 
   // 모델링 농도장(polygon)
   const sourceConcPolygon = new VectorSource({ wrapX: false });
@@ -70,7 +109,7 @@ export function createLccLayers() {
   });
 
   return {
-    sourceAsiaShp,
+    // sourceAsiaShp,
     layerAsiaShp,
     sourceConcPolygon,
     layerConcPolygon,

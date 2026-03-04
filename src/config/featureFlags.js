@@ -17,6 +17,14 @@ const FEATURES_BY_VARIANT = {
     showWebglWindSection: true,
     showEtcSection: true,
   },
+  nier: {
+    fullscreen: false,
+    showLayerSelect: false,
+    showPolygonModeSelect: false,
+    showModelingWindSection: false,
+    showWebglWindSection: false,
+    showEtcSection: false,
+  },
   //   local: {
   //     fullscreen: false,
   //     showLayerSelect: false,

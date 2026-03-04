@@ -32,6 +32,7 @@ import { WebGLWindOLAnimator } from '@/components/webgl/webgl-wind-ol-engine';
 import { useLccApi } from '@/hooks/useLccApi';
 import { usePolygonOverlay } from '@/hooks/usePolygonOverlay';
 import { createPolygonFeaturesFixedSingle } from '@/components/lcc/lcc.layers';
+import { APP_VARIANT } from '@/config/appVariant';
 
 /**
  * METCRO2D, ACONC 파일 데이터로 가져옴 => layer 하나
@@ -49,6 +50,7 @@ function Lcc({ mapId, SetMap }) {
     useContext(LccContext);
 
   const [datetimeObj, setDatetimeObj] = useState(null);
+  const [lccMeta, setLccMeta] = useState(null);
   const [polygonData, setPolygonData] = useState(null);
   const [windData, setWindData] = useState([]);
   const [earthData, setEarthData] = useState([]);
@@ -68,8 +70,13 @@ function Lcc({ mapId, SetMap }) {
 
   const halfCell = (settings.gridKm * 1000) / 2;
 
-  const { fetchShp, fetchLccData, fetchEarthData, fetchWebGLData } =
-    useLccApi(settings);
+  const {
+    fetchShp,
+    fetchLccData,
+    fetchEarthData,
+    fetchWebGLData,
+    fetchNierData,
+  } = useLccApi(settings);
 
   /** 지도 레이어 초기 등록/해제 */
   useEffect(() => {
@@ -201,9 +208,13 @@ function Lcc({ mapId, SetMap }) {
       setWindData([]);
 
       try {
-        const data = await fetchLccData();
+        const data =
+          APP_VARIANT === 'local'
+            ? await fetchNierData()
+            : await fetchLccData();
 
         if (data.datetime) setDatetimeObj(data.datetime);
+        if (data.meta) setLccMeta(data.meta);
 
         if (settings.tstep == null && data.datetime?.displayTstep != null) {
           updateSettings('tstep', data.datetime.displayTstep);
@@ -733,6 +744,7 @@ function Lcc({ mapId, SetMap }) {
             datetime={datetimeObj}
             segments={EARTH_SEGMENTS_MAP[settings.bgPoll]}
             scaleMeta={EARTH_SCALE_META[settings.bgPoll]}
+            meta={lccMeta}
           />
         </div>
       </div>

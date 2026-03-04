@@ -59,10 +59,29 @@ export function useLccApi(settings) {
     settings.bgPoll,
   ]);
 
+  const fetchNierData = useCallback(async () => {
+    const { data } = await axios.post(`${baseUrl}/api/marker/nier`, {
+      gridKm: settings.gridKm,
+      layer: settings.layer,
+      tstep: settings.tstep,
+      bgPoll: settings.bgPoll,
+      arrowGap: settings.arrowGap,
+    });
+    return data;
+  }, [
+    baseUrl,
+    settings.gridKm,
+    settings.layer,
+    settings.tstep,
+    settings.bgPoll,
+    settings.arrowGap,
+  ]);
+
   return {
     fetchShp,
     fetchLccData,
     fetchEarthData,
     fetchWebGLData,
+    fetchNierData,
   };
 }

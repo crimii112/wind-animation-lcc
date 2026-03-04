@@ -44,7 +44,7 @@ const SectionBox = ({ title, children }) => {
  * - 지도 설정(격자 km, layer, tstep, bgPoll, arrowGap)
  * - 레이어 visible, 스타일(투명도, 색상) 설정
  */
-const LccMapControlPanel = ({ datetime, segments, scaleMeta }) => {
+const LccMapControlPanel = ({ datetime, segments, scaleMeta, meta }) => {
   const {
     settings,
     updateSettings,
@@ -53,12 +53,15 @@ const LccMapControlPanel = ({ datetime, segments, scaleMeta }) => {
     layerVisible,
     toggleLayer,
   } = useContext(LccContext);
+
   const [open, setOpen] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
   const [speedMultiplier, setSpeedMultiplier] = useState(0.5);
   const [nextUpdateTxt, setNextUpdateTxt] = useState('00:00');
 
   const timerRef = useRef(null);
+
+  const tstepCount = meta?.tstepCount ?? 239;
 
   /* 자동 재생 로직 */
   useEffect(() => {
@@ -220,7 +223,7 @@ const LccMapControlPanel = ({ datetime, segments, scaleMeta }) => {
             updateSettings('tstep', v === '' ? null : Number(v));
           }}
         >
-          {Array.from({ length: 239 }, (_, i) => (
+          {Array.from({ length: tstepCount }, (_, i) => (
             <option key={i} value={i}>
               {i}
             </option>

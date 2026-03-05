@@ -23,37 +23,37 @@ const RESOLUTIONS = [
 const LCC_PROJ = get('LCC');
 export function createLccLayers() {
   // 아시아 경계(shp)
-  const tileGrid = new TileGrid({
-    extent: LCC_EXTENT,
-    tileSize: 256,
-    resolutions: RESOLUTIONS,
-  });
-  const layerAsiaShp = new VectorTileLayer({
-    id: 'asiashp',
-    opacity: 0.5,
-    source: new VectorTileSource({
-      format: new MVT(),
-      projection: LCC_PROJ,
-      tileGrid: tileGrid,
-      url: `${import.meta.env.VITE_WIND_API_URL}/api/asiashp/tiles/{z}/{x}/{y}.pbf`,
-      cacheSize: 512,
-    }),
-    style: new Style({
-      stroke: new Stroke({
-        color: 'black',
-        width: 1.5,
-      }),
-    }),
-  });
-  // const sourceAsiaShp = new VectorSource({ wrapX: false });
-  // const layerAsiaShp = new VectorLayer({
-  //   source: sourceAsiaShp,
+  // const tileGrid = new TileGrid({
+  //   extent: LCC_EXTENT,
+  //   tileSize: 256,
+  //   resolutions: RESOLUTIONS,
+  // });
+  // const layerAsiaShp = new VectorTileLayer({
   //   id: 'asiashp',
   //   opacity: 0.5,
-  //   renderMode: 'image',
-  //   updateWhileAnimating: false,
-  //   updateWhileInteracting: false,
+  //   source: new VectorTileSource({
+  //     format: new MVT(),
+  //     projection: LCC_PROJ,
+  //     tileGrid: tileGrid,
+  //     url: `${import.meta.env.VITE_WIND_API_URL}/api/asiashp/tiles/{z}/{x}/{y}.pbf`,
+  //     cacheSize: 512,
+  //   }),
+  //   style: new Style({
+  //     stroke: new Stroke({
+  //       color: 'black',
+  //       width: 1.5,
+  //     }),
+  //   }),
   // });
+  const sourceAsiaShp = new VectorSource({ wrapX: false });
+  const layerAsiaShp = new VectorLayer({
+    source: sourceAsiaShp,
+    id: 'asiashp',
+    opacity: 0.5,
+    renderMode: 'image',
+    updateWhileAnimating: false,
+    updateWhileInteracting: false,
+  });
 
   // 모델링 농도장(polygon)
   const sourceConcPolygon = new VectorSource({ wrapX: false });
@@ -109,7 +109,7 @@ export function createLccLayers() {
   });
 
   return {
-    // sourceAsiaShp,
+    sourceAsiaShp,
     layerAsiaShp,
     sourceConcPolygon,
     layerConcPolygon,

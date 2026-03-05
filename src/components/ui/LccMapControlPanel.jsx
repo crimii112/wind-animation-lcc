@@ -6,8 +6,6 @@ import { LccContext } from '@/components/lcc/LccContext';
 import ColorScale from './ColorScale';
 import { FEATURES } from '@/config/featureFlags';
 
-const MIN_TSTEP = 0;
-const MAX_TSTEP = 238;
 const BASE_SPEED = 1000; // 1초
 
 const LayerToggle = ({ label, checked, onChange, disabled, children }) => {
@@ -61,7 +59,20 @@ const LccMapControlPanel = ({ datetime, segments, scaleMeta, meta }) => {
 
   const timerRef = useRef(null);
 
+  const MIN_TSTEP = 0;
+  const MAX_TSTEP = meta?.tstepCount - 1;
   const tstepCount = meta?.tstepCount ?? 239;
+  const bgPollOptions = meta?.bgPollOptions ?? [
+    { value: 'CAI', title: 'CAI' },
+    { value: 'PM10', title: 'PM10' },
+    { value: 'PM2.5', title: 'PM2.5' },
+    { value: 'O3', title: 'O3' },
+    { value: 'SO2', title: 'SO2' },
+    { value: 'NO2', title: 'NO2' },
+    { value: 'CO', title: 'CO' },
+    { value: 'WS', title: '풍속' },
+    { value: 'TEMP', title: '온도' },
+  ];
 
   /* 자동 재생 로직 */
   useEffect(() => {
@@ -236,15 +247,11 @@ const LccMapControlPanel = ({ datetime, segments, scaleMeta, meta }) => {
           value={settings.bgPoll}
           onChange={e => updateSettings('bgPoll', e.target.value)}
         >
-          <option value="WIND">풍속</option>
-          <option value="TEMP">온도</option>
-          <option value="CAI">CAI</option>
-          <option value="O3">O3</option>
-          <option value="SO2">SO2</option>
-          <option value="NO2">NO2</option>
-          <option value="CO">CO</option>
-          <option value="PM10">PM10</option>
-          <option value="PM2.5">PM2.5</option>
+          {bgPollOptions.map(o => (
+            <option key={o.value} value={o.value}>
+              {o.title}
+            </option>
+          ))}
         </select>
       </ControlRow>
       <Divider />

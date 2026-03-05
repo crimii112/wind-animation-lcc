@@ -8,6 +8,7 @@
     "build": "vite build",
     "build:wal": "cross-env VITE_APP_BASE=/wal/ VITE_APP_VARIANT=wal vite build --mode production",
     "build:wal2": "cross-env VITE_APP_BASE=/wal2/ VITE_APP_VARIANT=wal2 vite build --mode production",
+    "build:nier": "cross-env VITE_APP_BASE=/nier/ VITE_APP_VARIANT=nier vite build --mode production",
     "lint": "eslint .",
     "preview": "vite preview"
   },

@@ -3,7 +3,7 @@
  * ============================== */
 
 export const RGBA_RANGES = {
-  WIND: [
+  WS: [
     { min: 0.0, max: 1.0, color: 'rgba(50, 136, 189, 1)' },
     { min: 1.0, max: 2.0, color: 'rgba(86, 170, 178, 1)' },
     { min: 2.0, max: 3.0, color: 'rgba(121, 200, 164, 1)' },
@@ -670,6 +670,75 @@ export const RGBA_RANGES = {
       color: 'rgba(255, 0, 0, 1)',
     },
   ],
+  WD: [
+    { min: 0.0, max: 11.25, label: 'N', color: 'rgba(50, 136, 189, 1)' },
+    { min: 11.25, max: 33.75, label: 'NNE', color: 'rgba(63, 150, 185, 1)' },
+    { min: 33.75, max: 56.25, label: 'NE', color: 'rgba(76, 163, 180, 1)' },
+    { min: 56.25, max: 78.75, label: 'ENE', color: 'rgba(86, 170, 178, 1)' },
+    { min: 78.75, max: 101.25, label: 'E', color: 'rgba(103, 187, 171, 1)' },
+    { min: 101.25, max: 123.75, label: 'ESE', color: 'rgba(121, 200, 164, 1)' },
+    { min: 123.75, max: 146.25, label: 'SE', color: 'rgba(146, 213, 164, 1)' },
+    { min: 146.25, max: 168.75, label: 'SSE', color: 'rgba(171, 221, 164, 1)' },
+    { min: 168.75, max: 191.25, label: 'S', color: 'rgba(200, 233, 158, 1)' },
+    { min: 191.25, max: 213.75, label: 'SSW', color: 'rgba(230, 245, 152, 1)' },
+    { min: 213.75, max: 236.25, label: 'SW', color: 'rgba(247, 234, 146, 1)' },
+    { min: 236.25, max: 258.75, label: 'WSW', color: 'rgba(254, 224, 139, 1)' },
+    { min: 258.75, max: 281.25, label: 'W', color: 'rgba(253, 199, 118, 1)' },
+    { min: 281.25, max: 303.75, label: 'WNW', color: 'rgba(253, 174, 97, 1)' },
+    { min: 303.75, max: 326.25, label: 'NW', color: 'rgba(248, 140, 78, 1)' },
+    { min: 326.25, max: 348.75, label: 'NNW', color: 'rgba(244, 109, 67, 1)' },
+    { min: 348.75, max: 360.0, label: 'N', color: 'rgba(50, 136, 189, 1)' },
+  ],
+  CFRAC: [
+    { min: 0.0, max: 0.1, color: 'rgba(230, 245, 152, 1)' },
+    { min: 0.1, max: 0.2, color: 'rgba(200, 233, 158, 1)' },
+    { min: 0.2, max: 0.3, color: 'rgba(171, 221, 164, 1)' },
+    { min: 0.3, max: 0.4, color: 'rgba(146, 213, 164, 1)' },
+    { min: 0.4, max: 0.5, color: 'rgba(121, 200, 164, 1)' },
+    { min: 0.5, max: 0.6, color: 'rgba(103, 187, 171, 1)' },
+    { min: 0.6, max: 0.7, color: 'rgba(86, 170, 178, 1)' },
+    { min: 0.7, max: 0.8, color: 'rgba(76, 163, 180, 1)' },
+    { min: 0.8, max: 0.9, color: 'rgba(63, 150, 185, 1)' },
+    { min: 0.9, max: 1.0, color: 'rgba(50, 136, 189, 1)' },
+  ],
+  PBL: [
+    { min: 0, max: 200, color: 'rgba(255, 230, 230, 1)' },
+    { min: 200, max: 400, color: 'rgba(255, 210, 210, 1)' },
+    { min: 400, max: 600, color: 'rgba(255, 190, 190, 1)' },
+    { min: 600, max: 800, color: 'rgba(255, 170, 170, 1)' },
+    { min: 800, max: 1000, color: 'rgba(255, 140, 140, 1)' },
+    { min: 1000, max: 1200, color: 'rgba(255, 110, 110, 1)' },
+    { min: 1200, max: 1400, color: 'rgba(255, 80, 80, 1)' },
+    { min: 1400, max: 1600, color: 'rgba(255, 60, 60, 1)' },
+    { min: 1600, max: 1800, color: 'rgba(230, 40, 40, 1)' },
+    { min: 1800, max: 2000, color: 'rgba(200, 20, 20, 1)' },
+    { min: 2000, max: Infinity, color: 'rgba(150, 0, 0, 1)' },
+  ],
+  PRSFC: [
+    { min: 500, max: 600, color: 'rgba(49, 0, 82, 1)' },
+    { min: 600, max: 700, color: 'rgba(76, 0, 153, 1)' },
+    { min: 700, max: 800, color: 'rgba(0, 0, 204, 1)' },
+    { min: 800, max: 900, color: 'rgba(0, 102, 204, 1)' },
+    { min: 900, max: 950, color: 'rgba(0, 180, 180, 1)' },
+    { min: 950, max: 980, color: 'rgba(120, 210, 80, 1)' },
+    { min: 980, max: 1000, color: 'rgba(255, 200, 0, 1)' },
+    { min: 1000, max: 1015, color: 'rgba(255, 140, 0, 1)' },
+    { min: 1015, max: 1030, color: 'rgba(255, 80, 0, 1)' },
+    { min: 1030, max: Infinity, color: 'rgba(220, 0, 0, 1)' },
+  ],
+  RGRND: [
+    { min: 0, max: 50, color: 'rgba(49, 0, 82, 1)' },
+    { min: 50, max: 100, color: 'rgba(76, 0, 153, 1)' },
+    { min: 100, max: 200, color: 'rgba(0, 0, 204, 1)' },
+    { min: 200, max: 300, color: 'rgba(0, 102, 204, 1)' },
+    { min: 300, max: 400, color: 'rgba(0, 180, 180, 1)' },
+    { min: 400, max: 500, color: 'rgba(120, 210, 80, 1)' },
+    { min: 500, max: 600, color: 'rgba(255, 200, 0, 1)' },
+    { min: 600, max: 700, color: 'rgba(255, 140, 0, 1)' },
+    { min: 700, max: 800, color: 'rgba(255, 80, 0, 1)' },
+    { min: 800, max: 900, color: 'rgba(220, 0, 0, 1)' },
+    { min: 900, max: Infinity, color: 'rgba(120, 0, 0, 1)' },
+  ],
 };
 
 /* ==============================
@@ -710,7 +779,7 @@ export function rgbsToEarthSegments(rgbs) {
  * ============================== */
 
 export const EARTH_SEGMENTS_MAP = {
-  WIND: rgbsToEarthSegments(RGBA_RANGES.WIND),
+  WS: rgbsToEarthSegments(RGBA_RANGES.WS),
   CAI: rgbsToEarthSegments(RGBA_RANGES.CAI),
   TEMP: rgbsToEarthSegments(RGBA_RANGES.TEMP),
   O3: rgbsToEarthSegments(RGBA_RANGES.O3),
@@ -719,10 +788,15 @@ export const EARTH_SEGMENTS_MAP = {
   CO: rgbsToEarthSegments(RGBA_RANGES.CO),
   PM10: rgbsToEarthSegments(RGBA_RANGES.PM10),
   'PM2.5': rgbsToEarthSegments(RGBA_RANGES['PM2.5']),
+  WD: rgbsToEarthSegments(RGBA_RANGES.WD),
+  CFRAC: rgbsToEarthSegments(RGBA_RANGES.CFRAC),
+  PBL: rgbsToEarthSegments(RGBA_RANGES.PBL),
+  PRSFC: rgbsToEarthSegments(RGBA_RANGES.PRSFC),
+  RGRND: rgbsToEarthSegments(RGBA_RANGES.RGRND),
 };
 
 export const EARTH_SCALE_META = {
-  WIND: {
+  WS: {
     unit: 'm/s',
     format: v => v.toFixed(2),
     labelFormat: v => v.toFixed(2),
@@ -766,5 +840,30 @@ export const EARTH_SCALE_META = {
     unit: 'µg/m³',
     format: v => Math.round(v),
     labelFormat: v => Math.round(v),
+  },
+  WD: {
+    unit: '°',
+    format: v => v.toFixed(2),
+    labelFormat: v => v.toFixed(2),
+  },
+  CFRAC: {
+    unit: '',
+    format: v => v.toFixed(3),
+    labelFormat: v => v.toFixed(3),
+  },
+  PBL: {
+    unit: 'm',
+    format: v => v.toFixed(1),
+    labelFormat: v => v.toFixed(1),
+  },
+  PRSFC: {
+    unit: 'hPa',
+    format: v => v.toFixed(1),
+    labelFormat: v => v.toFixed(1),
+  },
+  RGRND: {
+    unit: ' W/m²',
+    format: v => v.toFixed(1),
+    labelFormat: v => v.toFixed(1),
   },
 };

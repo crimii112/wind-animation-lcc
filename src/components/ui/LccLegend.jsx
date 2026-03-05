@@ -33,14 +33,20 @@ const LccLegend = ({
             {unit ? `(${unit})` : ''}
           </LegendTitle>
           <ColorList>
-            {[...rgbs].reverse().map(item => (
-              <ColorRow key={item.min}>
-                <ColorBox style={{ backgroundColor: item.color }} />
-                {Number.isFinite(item.min) && (
-                  <ValueText>{item.min.toFixed(precision)}</ValueText>
-                )}
-              </ColorRow>
-            ))}
+            {[...rgbs].reverse().map(item => {
+              const isWD = unit === '°' && title?.includes('풍향');
+              return (
+                <ColorRow key={item.min}>
+                  <ColorBox style={{ backgroundColor: item.color }} />
+
+                  {Number.isFinite(item.min) && (
+                    <ValueText>{item.min.toFixed(precision)}</ValueText>
+                  )}
+
+                  {/* {item.label && <DirText>{item.label}</DirText>} */}
+                </ColorRow>
+              );
+            })}
           </ColorList>
         </LegendSection>
       )}
@@ -225,6 +231,7 @@ const ColorList = styled.div`
 `;
 
 const ColorRow = styled.div`
+  position: relative;
   display: flex;
   align-items: flex-end;
   gap: 8px;
@@ -248,6 +255,18 @@ const ValueText = styled.span`
   font-variant-numeric: tabular-nums;
   line-height: 1;
   transform: translateY(4px);
+`;
+
+const DirText = styled.span`
+  position: absolute;
+  left: 24px; /* ColorBox(24px) 다음부터 시작 */
+  margin-left: 8px; /* 기존 gap 느낌 */
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 12px;
+  font-weight: 600;
+  color: #555;
+  line-height: 1;
 `;
 
 const FoldBtn = styled.button`

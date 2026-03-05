@@ -76,6 +76,8 @@ function Lcc({ mapId, SetMap }) {
     fetchEarthData,
     fetchWebGLData,
     fetchNierData,
+    fetchNierEarthData,
+    fetchNierWebGLData,
   } = useLccApi(settings);
 
   /** 지도 레이어 초기 등록/해제 */
@@ -155,39 +157,39 @@ function Lcc({ mapId, SetMap }) {
   usePolygonOverlay({ map, layersRef, settingsRef, layerVisibleRef });
 
   /** shp(시도/국가) 데이터 로드 */
-  // useEffect(() => {
-  //   if (!map?.ol_uid) return;
+  useEffect(() => {
+    if (!map?.ol_uid) return;
 
-  //   const load = async () => {
-  //     const { sourceAsiaShp, layerAsiaShp } = layersRef.current;
-  //     sourceAsiaShp.clear();
+    const load = async () => {
+      const { sourceAsiaShp, layerAsiaShp } = layersRef.current;
+      sourceAsiaShp.clear();
 
-  //     try {
-  //       const data = await fetchShp();
-  //       if (!data) return;
+      try {
+        const data = await fetchShp();
+        if (!data) return;
 
-  //       if (data.asiashp) {
-  //         const asiaFeatures = new GeoJSON().readFeatures(data.asiashp);
+        if (data.asiashp) {
+          const asiaFeatures = new GeoJSON().readFeatures(data.asiashp);
 
-  //         sourceAsiaShp.addFeatures(asiaFeatures);
-  //       }
+          sourceAsiaShp.addFeatures(asiaFeatures);
+        }
 
-  //       const boundaryStyle = new Style({
-  //         stroke: new Stroke({
-  //           color: 'black',
-  //           width: 1.5,
-  //         }),
-  //       });
+        const boundaryStyle = new Style({
+          stroke: new Stroke({
+            color: 'black',
+            width: 1.5,
+          }),
+        });
 
-  //       layerAsiaShp.setStyle(boundaryStyle);
-  //     } catch (e) {
-  //       console.error('Error fetching sido shp data:', e);
-  //       alert('shp 데이터를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.');
-  //     }
-  //   };
+        layerAsiaShp.setStyle(boundaryStyle);
+      } catch (e) {
+        console.error('Error fetching sido shp data:', e);
+        alert('shp 데이터를 불러오지 못했습니다. 잠시 후 다시 시도해주세요.');
+      }
+    };
 
-  //   load();
-  // }, [map?.ol_uid]);
+    load();
+  }, [map?.ol_uid]);
 
   /** LCC(농도 폴리곤 + 바람 화살표) 데이터 로드 */
   useEffect(() => {
@@ -209,9 +211,7 @@ function Lcc({ mapId, SetMap }) {
 
       try {
         const data =
-          APP_VARIANT === 'local'
-            ? await fetchNierData()
-            : await fetchLccData();
+          APP_VARIANT === 'nier' ? await fetchNierData() : await fetchLccData();
 
         if (data.datetime) setDatetimeObj(data.datetime);
         if (data.meta) setLccMeta(data.meta);
@@ -289,7 +289,10 @@ function Lcc({ mapId, SetMap }) {
     const load = async () => {
       setEarthData([]);
       try {
-        const data = await fetchEarthData();
+        const data =
+          APP_VARIANT === 'nier'
+            ? await fetchNierEarthData()
+            : await fetchEarthData();
 
         if (data.earthData) setEarthData(data.earthData);
       } catch (e) {
@@ -316,7 +319,10 @@ function Lcc({ mapId, SetMap }) {
 
     const load = async () => {
       try {
-        const data = await fetchWebGLData();
+        const data =
+          APP_VARIANT === 'nier'
+            ? await fetchNierWebGLData()
+            : await fetchWebGLData();
         if (data) setWebGLData(data);
       } catch (e) {
         console.error('Error fetching webgl data:', e);
@@ -760,8 +766,13 @@ const POLL_META = {
   PM10: { title: 'PM10', unit: 'µg/m³', precision: 0 },
   'PM2.5': { title: 'PM2.5', unit: 'µg/m³', precision: 0 },
   TEMP: { title: '온도', unit: '℃', precision: 0 },
-  WIND: { title: '풍속', unit: 'm/s', precision: 1 },
+  WS: { title: '풍속', unit: 'm/s', precision: 1 },
   CAI: { title: 'CAI', unit: '', precision: 0 },
+  WD: { title: '풍향', unit: '°', precision: 2 },
+  CFRAC: { title: 'CFRAC', unit: '', precision: 3 },
+  PBL: { title: 'PBL', unit: 'm', precision: 1 },
+  PRSFC: { title: 'PRSFC', unit: 'hPa', precision: 1 },
+  RGRND: { title: 'RGRND', unit: 'W/m²', precision: 1 },
 };
 
 export default Lcc;

@@ -6,7 +6,7 @@ export class WebGLWindOLAnimator {
     extentLCC,
     windData,
     scalarData = null,
-    poll = 'WIND',
+    poll = 'WS',
     lineWidth,
   }) {
     this.map = map;

@@ -3,7 +3,7 @@ import { APP_VARIANT } from '@/config/appVariant';
 
 export const LccContext = createContext();
 
-const IS_WAL = APP_VARIANT === 'wal';
+const IS_WAL = ['wal', 'nier'].includes(APP_VARIANT);
 
 export const LccProvider = ({ children }) => {
   const [settings, setSettings] = useState({

@@ -2,7 +2,12 @@ import axios from 'axios';
 import { useCallback } from 'react';
 
 export function useLccApi(settings) {
-  const baseUrl = import.meta.env.VITE_WIND_API_URL;
+  // const baseUrl = import.meta.env.VITE_WIND_API_URL;
+  // const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, ''); // "/wal" or "/wal2"
+
+  const baseUrl = import.meta.env.PROD
+    ? import.meta.env.BASE_URL.replace(/\/$/, '') // "/wal" or "/wal2"
+    : import.meta.env.VITE_WIND_API_URL || '';
 
   const fetchShp = useCallback(async () => {
     const { data } = await axios.post(`${baseUrl}/api/marker/shp`);
@@ -77,11 +82,45 @@ export function useLccApi(settings) {
     settings.arrowGap,
   ]);
 
+  const fetchNierEarthData = useCallback(async () => {
+    const { data } = await axios.post(`${baseUrl}/api/marker/nier-earth`, {
+      gridKm: settings.gridKm,
+      layer: settings.layer,
+      tstep: settings.tstep,
+      bgPoll: settings.bgPoll,
+    });
+    return data;
+  }, [
+    baseUrl,
+    settings.gridKm,
+    settings.layer,
+    settings.tstep,
+    settings.bgPoll,
+  ]);
+
+  const fetchNierWebGLData = useCallback(async () => {
+    const { data } = await axios.post(`${baseUrl}/api/marker/nier-webgl`, {
+      gridKm: settings.gridKm,
+      layer: settings.layer,
+      tstep: settings.tstep,
+      poll: settings.bgPoll,
+    });
+    return data;
+  }, [
+    baseUrl,
+    settings.gridKm,
+    settings.layer,
+    settings.tstep,
+    settings.bgPoll,
+  ]);
+
   return {
     fetchShp,
     fetchLccData,
     fetchEarthData,
     fetchWebGLData,
     fetchNierData,
+    fetchNierEarthData,
+    fetchNierWebGLData,
   };
 }

@@ -38,6 +38,9 @@ import { APP_VARIANT } from '@/config/appVariant';
  * METCRO2D, ACONC 파일 데이터로 가져옴 => layer 하나
  */
 function Lcc({ mapId, SetMap }) {
+  const IS_LOCAL = import.meta.env.DEV || import.meta.env.MODE === 'local';
+  const USE_NIER = APP_VARIANT === 'nier' || IS_LOCAL;
+
   const GRID_KM_MAP_CONFIG = {
     // 9: { center: [131338, -219484], zoom: 7.8 },
     // 27: { center: [-121523, -46962], zoom: 5.5 },
@@ -210,8 +213,7 @@ function Lcc({ mapId, SetMap }) {
       setWindData([]);
 
       try {
-        const data =
-          APP_VARIANT === 'nier' ? await fetchNierData() : await fetchLccData();
+        const data = USE_NIER ? await fetchNierData() : await fetchLccData();
 
         if (data.datetime) setDatetimeObj(data.datetime);
         if (data.meta) setLccMeta(data.meta);
@@ -289,10 +291,9 @@ function Lcc({ mapId, SetMap }) {
     const load = async () => {
       setEarthData([]);
       try {
-        const data =
-          APP_VARIANT === 'nier'
-            ? await fetchNierEarthData()
-            : await fetchEarthData();
+        const data = USE_NIER
+          ? await fetchNierEarthData()
+          : await fetchEarthData();
 
         if (data.earthData) setEarthData(data.earthData);
       } catch (e) {
@@ -319,10 +320,9 @@ function Lcc({ mapId, SetMap }) {
 
     const load = async () => {
       try {
-        const data =
-          APP_VARIANT === 'nier'
-            ? await fetchNierWebGLData()
-            : await fetchWebGLData();
+        const data = USE_NIER
+          ? await fetchNierWebGLData()
+          : await fetchWebGLData();
         if (data) setWebGLData(data);
       } catch (e) {
         console.error('Error fetching webgl data:', e);

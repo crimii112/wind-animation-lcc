@@ -60,8 +60,9 @@ const LccMapControlPanel = ({ datetime, segments, scaleMeta, meta }) => {
   const timerRef = useRef(null);
 
   const MIN_TSTEP = 0;
-  const MAX_TSTEP = meta?.tstepCount - 1;
+  const MAX_TSTEP = (meta?.tstepCount ?? 239) - 1;
   const tstepCount = meta?.tstepCount ?? 239;
+  const timeOptions = meta?.timeOptions ?? [];
   const bgPollOptions = meta?.bgPollOptions ?? [
     { value: 'CAI', title: 'CAI' },
     { value: 'PM10', title: 'PM10' },
@@ -99,6 +100,11 @@ const LccMapControlPanel = ({ datetime, segments, scaleMeta, meta }) => {
   const handleNextTstep = () => {
     setIsPlaying(false);
     updateSettings('tstep', Math.min(MAX_TSTEP, settings.tstep + 1));
+  };
+
+  const handleTstepChange = value => {
+    setIsPlaying(false);
+    updateSettings('tstep', value === '' ? null : Number(value));
   };
 
   const msUntilNextHour = () => {
@@ -225,18 +231,34 @@ const LccMapControlPanel = ({ datetime, segments, scaleMeta, meta }) => {
           </select>
         </ControlRow>
       )}
+      {FEATURES.showTstepSelect && (
+        <ControlRow>
+          <span>TSTEP</span>
+          <select
+            value={settings.tstep ?? ''}
+            onChange={e => {
+              const v = e.target.value;
+              updateSettings('tstep', v === '' ? null : Number(v));
+            }}
+          >
+            {Array.from({ length: tstepCount }, (_, i) => (
+              <option key={i} value={i}>
+                {i}
+              </option>
+            ))}
+          </select>
+        </ControlRow>
+      )}
       <ControlRow>
-        <span>TSTEP</span>
+        <span>시간</span>
         <select
           value={settings.tstep ?? ''}
-          onChange={e => {
-            const v = e.target.value;
-            updateSettings('tstep', v === '' ? null : Number(v));
-          }}
+          onChange={e => handleTstepChange(e.target.value)}
         >
-          {Array.from({ length: tstepCount }, (_, i) => (
-            <option key={i} value={i}>
-              {i}
+          <option value="">현재 시간</option>
+          {timeOptions.map(o => (
+            <option key={o.tstep} value={o.tstep}>
+              {o.label}
             </option>
           ))}
         </select>
@@ -274,6 +296,17 @@ const LccMapControlPanel = ({ datetime, segments, scaleMeta, meta }) => {
             </select>
           </SubRow>
         )}
+        <SubRow>
+          <span className="label-text">오버레이 방식</span>
+          <select
+            value={settings.overlayMode}
+            onChange={e => updateSettings('overlayMode', e.target.value)}
+          >
+            <option value="click">마우스 클릭</option>
+            <option value="hover">마우스 무브</option>
+            <option value="none">없음</option>
+          </select>
+        </SubRow>
         <SubRow>
           <span className="label-text">투명도</span>
           <input
@@ -606,7 +639,7 @@ const ControlRow = styled.label`
   }
 
   select {
-    width: 100px;
+    width: 150px;
     padding: 5px 25px 5px 10px;
     font-size: 13px;
     border: 1px solid #ddd;

@@ -4,6 +4,7 @@ const FEATURES_BY_VARIANT = {
   wal: {
     fullscreen: false, // 전체화면 기능
     showLayerSelect: false, // 패널-LAYER select
+    showTstepSelect: false, // 패널-TSTEP select
     showPolygonModeSelect: false, // 패널-폴리곤 방식(모델링 농도장) select
     showModelingWindSection: false, // 패널-모델링 바람장 section
     showWebglWindSection: false,
@@ -12,6 +13,7 @@ const FEATURES_BY_VARIANT = {
   wal2: {
     fullscreen: true,
     showLayerSelect: true,
+    showTstepSelect: true,
     showPolygonModeSelect: true,
     showModelingWindSection: true,
     showWebglWindSection: true,
@@ -20,6 +22,7 @@ const FEATURES_BY_VARIANT = {
   nier: {
     fullscreen: false,
     showLayerSelect: false,
+    showTstepSelect: false,
     showPolygonModeSelect: false,
     showModelingWindSection: false,
     showWebglWindSection: false,
@@ -36,6 +39,7 @@ const FEATURES_BY_VARIANT = {
   local: {
     fullscreen: true,
     showLayerSelect: true,
+    showTstepSelect: false,
     showPolygonModeSelect: true,
     showModelingWindSection: true,
     showWebglWindSection: true,

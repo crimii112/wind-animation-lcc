@@ -13,6 +13,7 @@ export const LccProvider = ({ children }) => {
     bgPoll: 'PM2.5',
     arrowGap: 3,
     polygonMode: IS_WAL ? 'fixedSingle' : 'fixedSingle',
+    overlayMode: IS_WAL ? 'click' : 'hover',
     zoom: 7.8,
   });
 
